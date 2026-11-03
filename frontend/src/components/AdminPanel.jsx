@@ -1252,28 +1252,56 @@ export default function AdminPanel({ isOpen, onClose, onRefreshCatalog }) {
                               </button>
 
                               <div className="flex items-center gap-1 px-1">
-                                {Array.from({ length: Math.min(5, totalPages) }, (_, idx) => {
-                                  // Calcular ventana deslizante de páginas
-                                  let pageNum = safePage - 2 + idx;
-                                  if (pageNum < 1) pageNum = idx + 1;
-                                  if (pageNum > totalPages) pageNum = totalPages - 4 + idx;
-                                  if (pageNum < 1 || pageNum > totalPages) return null;
+                                {(() => {
+                                  // Generar lista limpia y estrictamente única de páginas
+                                  const pages = [];
+                                  if (totalPages <= 7) {
+                                    for (let i = 1; i <= totalPages; i++) pages.push(i);
+                                  } else {
+                                    pages.push(1);
+                                    let start = Math.max(2, safePage - 1);
+                                    let end = Math.min(totalPages - 1, safePage + 1);
 
-                                  const isActive = pageNum === safePage;
-                                  return (
-                                    <button
-                                      key={pageNum}
-                                      onClick={() => setCurrentPage(pageNum)}
-                                      className={`w-8 h-8 rounded-[6px] text-[12px] font-bold cursor-pointer transition-all ${
-                                        isActive
-                                          ? 'bg-[#000aff] text-white shadow-sm'
-                                          : 'bg-white border border-[#d7d7d7] text-[#444955] hover:bg-neutral-100'
-                                      }`}
-                                    >
-                                      {pageNum}
-                                    </button>
-                                  );
-                                })}
+                                    if (safePage <= 3) {
+                                      start = 2;
+                                      end = 4;
+                                    } else if (safePage >= totalPages - 2) {
+                                      start = totalPages - 3;
+                                      end = totalPages - 1;
+                                    }
+
+                                    if (start > 2) pages.push('ellipsis-start');
+                                    for (let i = start; i <= end; i++) pages.push(i);
+                                    if (end < totalPages - 1) pages.push('ellipsis-end');
+                                    pages.push(totalPages);
+                                  }
+
+                                  return pages.map((item, idx) => {
+                                    if (typeof item === 'string') {
+                                      return (
+                                        <span key={`ell-${idx}`} className="px-1 text-neutral-400 font-bold select-none">
+                                          ...
+                                        </span>
+                                      );
+                                    }
+
+                                    const isActive = item === safePage;
+                                    return (
+                                      <button
+                                        key={`page-${item}`}
+                                        type="button"
+                                        onClick={() => setCurrentPage(item)}
+                                        className={`w-8 h-8 rounded-[6px] text-[12px] font-bold cursor-pointer transition-all ${
+                                          isActive
+                                            ? 'bg-[#000aff] text-white shadow-sm'
+                                            : 'bg-white border border-[#d7d7d7] text-[#444955] hover:bg-neutral-100'
+                                        }`}
+                                      >
+                                        {item}
+                                      </button>
+                                    );
+                                  });
+                                })()}
                               </div>
 
                               <button

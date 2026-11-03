@@ -63,8 +63,7 @@ export default function PresentationsSection() {
               />
               <div className="absolute bottom-3 left-3 right-3 bg-black/60 backdrop-blur-md rounded-[6px] p-2.5 text-white flex items-center justify-between">
                 <div>
-                  <p className="text-[11px] font-mono text-white/80">Fotografía Real de Taller</p>
-                  <p className="text-[13px] font-semibold">Frascos Oficiales SHINE</p>
+                  <p className="text-[13px] font-semibold">Presentación de los frascos</p>
                 </div>
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#000aff] text-white">
                   Verificados

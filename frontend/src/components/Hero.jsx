@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ArrowRight, Sparkles, Shuffle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowRight, Sparkles } from 'lucide-react';
 
-// Pool curado de los perfumes más vendidos e icónicos
+// Pool curado de los perfumes icónicos más vendidos con fotografía real de alta calidad
 const CURATED_BESTSELLERS = [
   {
     id: "SHINE-0012",
@@ -9,6 +9,7 @@ const CURATED_BESTSELLERS = [
     brand: "Armaf",
     category: "Inspiraciones",
     subcategory: "Árabes",
+    gender: "Hombre",
     image_url: "./uploads/products/armaf-club-de-nuit-intense.png"
   },
   {
@@ -17,6 +18,7 @@ const CURATED_BESTSELLERS = [
     brand: "Lattafa",
     category: "Inspiraciones",
     subcategory: "Árabes",
+    gender: "Unisex",
     image_url: "./uploads/products/lattafa-khamrah.png"
   },
   {
@@ -25,6 +27,7 @@ const CURATED_BESTSELLERS = [
     brand: "Lattafa",
     category: "Inspiraciones",
     subcategory: "Árabes",
+    gender: "Hombre",
     image_url: "./uploads/products/lattafa-asad.png"
   },
   {
@@ -33,6 +36,7 @@ const CURATED_BESTSELLERS = [
     brand: "Lattafa",
     category: "Inspiraciones",
     subcategory: "Árabes",
+    gender: "Mujer",
     image_url: "./uploads/products/lattafa-yara.png"
   },
   {
@@ -41,6 +45,7 @@ const CURATED_BESTSELLERS = [
     brand: "Chanel",
     category: "Inspiraciones",
     subcategory: "Hombres",
+    gender: "Hombre",
     image_url: "./uploads/products/chanel-bleu-de-chanel.png"
   },
   {
@@ -49,6 +54,7 @@ const CURATED_BESTSELLERS = [
     brand: "Louis Vuitton",
     category: "Inspiraciones",
     subcategory: "Nicho",
+    gender: "Unisex",
     image_url: "./uploads/products/louis-vuitton-imagination.png"
   },
   {
@@ -57,6 +63,7 @@ const CURATED_BESTSELLERS = [
     brand: "Louis Vuitton",
     category: "Inspiraciones",
     subcategory: "Nicho",
+    gender: "Unisex",
     image_url: "./uploads/products/louis-vuitton-ombre-nomade.png"
   },
   {
@@ -65,6 +72,7 @@ const CURATED_BESTSELLERS = [
     brand: "Maison Francis Kurkdjian",
     category: "Originales",
     subcategory: "Nicho",
+    gender: "Unisex",
     image_url: "./uploads/products/mfk-baccarat-rouge-540.png"
   },
   {
@@ -73,6 +81,7 @@ const CURATED_BESTSELLERS = [
     brand: "Dior",
     category: "Originales",
     subcategory: "Diseñador",
+    gender: "Hombre",
     image_url: "./uploads/products/dior-sauvage.png"
   },
   {
@@ -81,6 +90,7 @@ const CURATED_BESTSELLERS = [
     brand: "Creed",
     category: "Originales",
     subcategory: "Nicho",
+    gender: "Hombre",
     image_url: "./uploads/products/creed-aventus.png"
   },
   {
@@ -89,6 +99,7 @@ const CURATED_BESTSELLERS = [
     brand: "Xerjoff",
     category: "Originales",
     subcategory: "Nicho",
+    gender: "Unisex",
     image_url: "./uploads/products/xerjoff-naxos.png"
   },
   {
@@ -97,6 +108,7 @@ const CURATED_BESTSELLERS = [
     brand: "Dior",
     category: "Perfumería 1.1",
     subcategory: "Diseñador",
+    gender: "Hombre",
     image_url: "./uploads/products/dior-sauvage.png"
   },
   {
@@ -105,23 +117,8 @@ const CURATED_BESTSELLERS = [
     brand: "Tom Ford",
     category: "Perfumería 1.1",
     subcategory: "Nicho",
+    gender: "Unisex",
     image_url: "./uploads/products/tom-ford-oud-wood.png"
-  },
-  {
-    id: "SHINE-0378",
-    name: "9 A.M",
-    brand: "Afnan",
-    category: "Inspiraciones",
-    subcategory: "Árabes",
-    image_url: "./uploads/system/presentaciones_shine.jpg"
-  },
-  {
-    id: "SHINE-0377",
-    name: "9 P.M",
-    brand: "Afnan",
-    category: "Inspiraciones",
-    subcategory: "Árabes",
-    image_url: "./uploads/system/presentaciones_shine.jpg"
   }
 ];
 
@@ -132,76 +129,68 @@ export default function Hero({
   onExploreOriginals, 
   onOpenProductDetail 
 }) {
-  // Construir pool dinámico combinando el catálogo cargado y los destacados curados
+  // Función validadora estricta: solo perfumes que posean fotografía real propia
+  const hasRealPhoto = (item) => {
+    const url = item?.image_url;
+    return Boolean(
+      url && 
+      typeof url === 'string' && 
+      url.trim().length > 5 && 
+      !url.includes('presentaciones_shine')
+    );
+  };
+
+  // Construir pool dinámico garantizando 100% que tengan fotografía real
   const rotatingPool = useMemo(() => {
+    const validCurated = CURATED_BESTSELLERS.filter(hasRealPhoto);
+
     if (!products || products.length === 0) {
-      return CURATED_BESTSELLERS;
+      return validCurated;
     }
 
-    // Vincular cada curado con su producto real de la BD para tener notas olfativas y datos completos
-    const matchedCurated = CURATED_BESTSELLERS.map(c => {
+    // Vincular curados con sus datos reales actualizados de la BD si coinciden
+    const matchedCurated = validCurated.map(c => {
       const match = products.find(p => p.id === c.id || (p.name && p.name.toUpperCase() === c.name.toUpperCase()));
-      return match ? { ...match, image_url: match.image_url || c.image_url } : c;
+      if (match && hasRealPhoto(match)) {
+        return match;
+      }
+      return match ? { ...match, image_url: c.image_url } : c;
     });
 
-    // Agregar también productos del catálogo que ya tengan fotografía asignada y no estén en la lista curada
+    // Agregar cualquier otro producto de la base de datos que tenga foto real subida y no esté en la lista curada
     const othersWithPhoto = products.filter(p => 
-      p.image_url && 
-      !p.image_url.includes('presentaciones_shine') &&
-      !matchedCurated.some(m => m.id === p.id)
+      hasRealPhoto(p) && !matchedCurated.some(m => m.id === p.id)
     );
 
-    return [...matchedCurated, ...othersWithPhoto];
+    const merged = [...matchedCurated, ...othersWithPhoto].filter(hasRealPhoto);
+    return merged.length > 0 ? merged : validCurated;
   }, [products]);
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFading, setIsFading] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
 
-  // Rotación aleatoria automática cada 5.5 segundos
+  // Rotación aleatoria 100% automática cada 5 segundos
   useEffect(() => {
     if (rotatingPool.length <= 1 || isPaused) return;
 
     const timer = setInterval(() => {
-      handleNextRandom();
-    }, 5500);
+      setIsFading(true);
+      setTimeout(() => {
+        setCurrentIndex((prev) => {
+          if (rotatingPool.length <= 1) return 0;
+          let next;
+          do {
+            next = Math.floor(Math.random() * rotatingPool.length);
+          } while (next === prev && rotatingPool.length > 1);
+          return next;
+        });
+        setIsFading(false);
+      }, 250);
+    }, 5000);
 
     return () => clearInterval(timer);
   }, [rotatingPool.length, currentIndex, isPaused]);
-
-  // Selección aleatoria garantizando no repetir el mismo inmediatamente
-  const handleNextRandom = () => {
-    setIsFading(true);
-    setTimeout(() => {
-      setCurrentIndex((prev) => {
-        if (rotatingPool.length <= 1) return 0;
-        let next;
-        do {
-          next = Math.floor(Math.random() * rotatingPool.length);
-        } while (next === prev && rotatingPool.length > 1);
-        return next;
-      });
-      setIsFading(false);
-    }, 220);
-  };
-
-  const handlePrev = (e) => {
-    e?.stopPropagation();
-    setIsFading(true);
-    setTimeout(() => {
-      setCurrentIndex((prev) => (prev - 1 + rotatingPool.length) % rotatingPool.length);
-      setIsFading(false);
-    }, 180);
-  };
-
-  const handleNext = (e) => {
-    e?.stopPropagation();
-    setIsFading(true);
-    setTimeout(() => {
-      setCurrentIndex((prev) => (prev + 1) % rotatingPool.length);
-      setIsFading(false);
-    }, 180);
-  };
 
   const currentProduct = rotatingPool[currentIndex] || CURATED_BESTSELLERS[0];
 
@@ -234,7 +223,7 @@ export default function Hero({
       <div className="relative z-10 max-w-[1440px] w-full mx-auto px-4 sm:px-6 lg:px-8 pb-16 pt-24 flex flex-col lg:flex-row items-end justify-between gap-10">
         {/* Left Column: Headlines & Badges */}
         <div className="max-w-2xl text-left space-y-5">
-          {/* New In Badge (DESIGN.md: Electric Cobalt #000aff, pill 30px, white text) */}
+          {/* New In Badge */}
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#000aff] text-white text-[12px] font-semibold tracking-wide shadow-sm">
             <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span>
             <span>COLECCIÓN 2026</span>
@@ -274,48 +263,23 @@ export default function Hero({
           </div>
         </div>
 
-        {/* Right Column: Floating Product Info Card Dinámica y Rotativa */}
+        {/* Right Column: Floating Product Info Card Automática y Limpia */}
         <div 
           onMouseEnter={() => setIsPaused(true)}
           onMouseLeave={() => setIsPaused(false)}
-          className="w-full sm:w-[330px] bg-white/95 backdrop-blur-md rounded-[16px] p-5 shadow-[0_12px_32px_rgba(0,0,0,0.3)] border border-white/60 flex flex-col gap-3.5 transition-all hover:shadow-[0_16px_40px_rgba(0,0,0,0.38)]"
+          className="w-full sm:w-[325px] bg-white/95 backdrop-blur-md rounded-[16px] p-5 shadow-[0_12px_32px_rgba(0,0,0,0.3)] border border-white/60 flex flex-col gap-3.5 transition-all hover:shadow-[0_16px_40px_rgba(0,0,0,0.38)]"
         >
-          {/* Header de la tarjeta con badge y controles de rotación */}
+          {/* Header de la tarjeta limpio y minimalista */}
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-[#000aff] animate-pulse"></span>
-              <span className="text-[10.5px] font-mono uppercase tracking-wider text-[#000aff] font-bold">
+              <span className="text-[11px] font-mono uppercase tracking-wider text-[#000aff] font-bold">
                 Top Más Vendido
               </span>
-              <span className="text-[10px] font-mono text-[#737780] bg-[#ecedee] px-1.5 py-0.2 rounded-full font-medium">
-                #{((currentIndex) % rotatingPool.length) + 1}/{rotatingPool.length}
-              </span>
             </div>
-
-            {/* Controles para cambiar manualmente o barajar */}
-            <div className="flex items-center gap-1">
-              <button
-                onClick={handlePrev}
-                title="Anterior más vendido"
-                className="w-6 h-6 rounded-full bg-[#ecedee] hover:bg-[#d7d7d7] text-[#444955] flex items-center justify-center transition-colors cursor-pointer"
-              >
-                <ChevronLeft className="w-3.5 h-3.5" />
-              </button>
-              <button
-                onClick={handleNextRandom}
-                title="Aleatorio / Barajar"
-                className="w-6 h-6 rounded-full bg-[#e5e7ff] hover:bg-[#000aff] text-[#000aff] hover:text-white flex items-center justify-center transition-colors cursor-pointer"
-              >
-                <Shuffle className="w-3 h-3" />
-              </button>
-              <button
-                onClick={handleNext}
-                title="Siguiente más vendido"
-                className="w-6 h-6 rounded-full bg-[#ecedee] hover:bg-[#d7d7d7] text-[#444955] flex items-center justify-center transition-colors cursor-pointer"
-              >
-                <ChevronRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
+            <span className="text-[10px] font-mono text-[#737780] bg-[#ecedee] px-2 py-0.5 rounded-full font-medium">
+              Destacado
+            </span>
           </div>
 
           {/* Cuerpo del perfume con transición de desvanecimiento suave */}
@@ -332,7 +296,7 @@ export default function Hero({
                 className="w-full h-full object-contain mix-blend-multiply transition-transform duration-300 hover:scale-110"
                 onError={(e) => {
                   e.target.onerror = null;
-                  e.target.src = './uploads/system/presentaciones_shine.jpg';
+                  e.target.src = './uploads/products/armaf-club-de-nuit-intense.png';
                 }}
               />
             </div>
@@ -356,7 +320,7 @@ export default function Hero({
             </div>
           </div>
 
-          {/* Footer de la tarjeta con precio y botón de apertura rápida */}
+          {/* Footer de la tarjeta con precio y botón de acción */}
           <div className="flex items-center justify-between pt-2.5 border-t border-[#ecedee]">
             <div>
               <span className="text-[10.5px] text-[#737780] block font-medium">

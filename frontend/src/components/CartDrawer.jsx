@@ -16,6 +16,15 @@ export default function CartDrawer() {
     settings
   } = useCart();
 
+  React.useEffect(() => {
+    if (isCartOpen) {
+      document.body.style.overflow = 'hidden';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isCartOpen]);
+
   if (!isCartOpen) return null;
 
   const handleFinishWhatsAppOrder = () => {
@@ -29,10 +38,10 @@ export default function CartDrawer() {
       {/* Backdrop */}
       <div
         onClick={() => setIsCartOpen(false)}
-        className="absolute inset-0 bg-black/50 backdrop-blur-xs transition-opacity"
+        className="absolute inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
       ></div>
 
-      <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
+      <div className="fixed inset-y-0 right-0 max-w-full flex pl-0 sm:pl-10">
         <div className="w-screen max-w-md bg-white shadow-2xl flex flex-col justify-between border-l border-[#ecedee] animate-slideInRight">
           {/* Top Bar */}
           <div className="p-6 border-b border-[#ecedee] flex items-center justify-between">

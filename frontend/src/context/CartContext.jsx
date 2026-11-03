@@ -65,7 +65,15 @@ export function CartProvider({ children, initialSettings }) {
    * y la selección de presentación es OBLIGATORIA.
    */
   const addToCart = (product, presentation, quantity = 1) => {
-    if (!product || product.category !== 'Inspiraciones') {
+    const isAllowed = Boolean(
+      product && (
+        product.displayCategory === 'Inspiraciones' ||
+        product.category === 'Inspiraciones' ||
+        !product.category ||
+        product.category === 'Originales'
+      )
+    );
+    if (!isAllowed) {
       alert('Solo las fragancias de la categoría Inspiraciones cuentan con opción de compra y carrito.');
       return false;
     }
@@ -93,7 +101,7 @@ export function CartProvider({ children, initialSettings }) {
             productId: product.id,
             name: product.name,
             brand: product.brand,
-            category: product.category,
+            category: product.displayCategory || product.category || 'Inspiraciones',
             subcategory: product.subcategory || 'General',
             image_url: product.image_url,
             presentation: presentation, // '30 ml', '60 ml', '100 ml'

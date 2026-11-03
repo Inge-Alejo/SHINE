@@ -24,7 +24,15 @@ export default function CatalogSection({
     let list = products || [];
 
     // Filtro por Categoría
-    if (activeCategory) {
+    if (activeCategory === 'Inspiraciones') {
+      list = list.filter(p => p.category === 'Inspiraciones' || !p.category || p.category === 'Originales');
+    } else if (activeCategory === 'Originales') {
+      // Los perfumes de inspiración y originales son los mismos
+      list = list.filter(p => p.category === 'Inspiraciones' || p.category === 'Originales' || !p.category);
+    } else if (activeCategory === 'Perfumería 1.1') {
+      // Configurado mediante el panel administrativo
+      list = list.filter(p => p.category === 'Perfumería 1.1');
+    } else if (activeCategory) {
       list = list.filter(p => p.category === activeCategory);
     }
 
@@ -76,7 +84,14 @@ export default function CatalogSection({
 
   // Marcas únicas disponibles según la categoría seleccionada
   const availableBrands = useMemo(() => {
-    const list = products.filter(p => !activeCategory || p.category === activeCategory);
+    let list = products || [];
+    if (activeCategory === 'Inspiraciones' || activeCategory === 'Originales') {
+      list = list.filter(p => p.category === 'Inspiraciones' || p.category === 'Originales' || !p.category);
+    } else if (activeCategory === 'Perfumería 1.1') {
+      list = list.filter(p => p.category === 'Perfumería 1.1');
+    } else if (activeCategory) {
+      list = list.filter(p => p.category === activeCategory);
+    }
     return Array.from(new Set(list.map(p => p.brand))).filter(Boolean).sort();
   }, [products, activeCategory]);
 
@@ -256,10 +271,12 @@ export default function CatalogSection({
         {displayedProducts.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {displayedProducts.map((p) => {
-              const isInspiracion = p.category === 'Inspiraciones';
-              const isOriginal = p.category === 'Originales';
-              const is11 = p.category === 'Perfumería 1.1';
+              const currentCategory = activeCategory || p.category || 'Inspiraciones';
+              const isInspiracion = currentCategory === 'Inspiraciones';
+              const isOriginal = currentCategory === 'Originales';
+              const is11 = currentCategory === 'Perfumería 1.1';
               const hasPhoto = Boolean(p.image_url);
+              const productWithContext = { ...p, displayCategory: currentCategory };
 
               // Initials for Brand Thumbnail (40x40 white square)
               const brandInitials = (p.brand || 'SH')
@@ -302,7 +319,7 @@ export default function CatalogSection({
 
                   {/* Product Image Frame */}
                   <div 
-                    onClick={() => onOpenProductDetail(p)}
+                    onClick={() => onOpenProductDetail(productWithContext)}
                     className="relative aspect-square w-full my-6 flex items-center justify-center cursor-pointer overflow-hidden"
                   >
                     {hasPhoto ? (
@@ -340,7 +357,7 @@ export default function CatalogSection({
 
                       <div className="min-w-0 flex-1">
                         <h4 
-                          onClick={() => onOpenProductDetail(p)}
+                          onClick={() => onOpenProductDetail(productWithContext)}
                           className="text-[15px] font-semibold text-[#111111] truncate tracking-tight hover:text-[#000aff] cursor-pointer"
                           title={p.name}
                         >
@@ -370,7 +387,7 @@ export default function CatalogSection({
                             </span>
                           </div>
                           <button
-                            onClick={() => onOpenProductDetail(p)}
+                            onClick={() => onOpenProductDetail(productWithContext)}
                             className="px-3 py-1.5 rounded-[10px] bg-[#000aff] hover:bg-[#0008cc] text-white text-[12px] font-medium flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 shadow-sm"
                           >
                             <ShoppingBag className="w-3.5 h-3.5" />
@@ -386,7 +403,7 @@ export default function CatalogSection({
                             </span>
                           </div>
                           <a
-                            href={getWhatsAppAvailabilityUrl(p)}
+                            href={getWhatsAppAvailabilityUrl(productWithContext)}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="px-3 py-1.5 rounded-[10px] bg-[#111111] hover:bg-[#222222] text-white text-[12px] font-medium flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"

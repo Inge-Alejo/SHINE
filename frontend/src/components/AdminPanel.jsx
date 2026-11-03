@@ -30,6 +30,8 @@ export default function AdminPanel({ isOpen, onClose, onRefreshCatalog }) {
   const [isLoadingDashboard, setIsLoadingDashboard] = useState(false);
 
   // Gestión de Productos
+  const [adminProducts, setAdminProducts] = useState([]);
+  const [isLoadingProds, setIsLoadingProds] = useState(false);
   const [prodSearch, setProdSearch] = useState('');
   const [prodCategoryFilter, setProdCategoryFilter] = useState('');
   const [editingProduct, setEditingProduct] = useState(null);
@@ -79,6 +81,7 @@ export default function AdminPanel({ isOpen, onClose, onRefreshCatalog }) {
       loadDashboardData();
       loadSheetsData();
       loadPendingImages();
+      loadAdminProducts();
     }
   }, [isOpen, token, activeTab]);
 
@@ -146,6 +149,119 @@ export default function AdminPanel({ isOpen, onClose, onRefreshCatalog }) {
       }
     } catch (e) {
       console.error(e);
+    }
+  };
+
+  const loadAdminProducts = async () => {
+    if (!token) return;
+    setIsLoadingProds(true);
+    try {
+      const res = await fetchProducts({ limit: 500, status: 'all' });
+      if (res && res.data) {
+        setAdminProducts(res.data);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsLoadingProds(false);
+    }
+  };
+
+  // Alternar rápidamente un perfume entre Inspiraciones y Perfumería 1.1
+  const handleToggle11 = async (p) => {
+    const newCategory = p.category === 'Perfumería 1.1' ? 'Inspiraciones' : 'Perfumería 1.1';
+    try {
+      const res = await updateProduct(token, p.id, {
+        ...p,
+        category: newCategory
+      });
+      if (res.success) {
+        setAdminProducts(prev => prev.map(item => item.id === p.id ? { ...item, category: newCategory } : item));
+        loadDashboardData();
+        if (onRefreshCatalog) onRefreshCatalog();
+      } else {
+        alert(res.error || 'Error al actualizar');
+      }
+    } catch (e) {
+      alert('Error de conexión al actualizar categoría');
+    }
+  };
+
+  const handleOpenEditProduct = (prod) => {
+    setEditingProduct(prod);
+    setProductForm({
+      name: prod.name || '',
+      brand: prod.brand || '',
+      category: prod.category || 'Inspiraciones',
+      subcategory: prod.subcategory || 'Diseñador',
+      description: prod.description || '',
+      olfactory_family: prod.olfactory_family || '',
+      gender: prod.gender || 'Unisex',
+      image_url: prod.image_url || '',
+      status: prod.status || 'publicado'
+    });
+    setIsCreatingProduct(true);
+  };
+
+  const handleOpenNewProduct = (defaultCategory = 'Perfumería 1.1') => {
+    setEditingProduct(null);
+    setProductForm({
+      name: '',
+      brand: '',
+      category: defaultCategory,
+      subcategory: defaultCategory === 'Inspiraciones' ? 'Diseñador' : '',
+      description: '',
+      olfactory_family: '',
+      gender: 'Unisex',
+      image_url: '',
+      status: 'publicado'
+    });
+    setIsCreatingProduct(true);
+  };
+
+  const handleSaveProduct = async (e) => {
+    e.preventDefault();
+    try {
+      if (editingProduct) {
+        const res = await updateProduct(token, editingProduct.id, productForm);
+        if (res.success) {
+          alert('Perfume actualizado correctamente en la base de datos');
+          setIsCreatingProduct(false);
+          setEditingProduct(null);
+          loadAdminProducts();
+          loadDashboardData();
+          if (onRefreshCatalog) onRefreshCatalog();
+        } else {
+          alert(res.error || 'Error al actualizar');
+        }
+      } else {
+        const res = await createProduct(token, productForm);
+        if (res.success) {
+          alert('Nuevo perfume creado exitosamente');
+          setIsCreatingProduct(false);
+          loadAdminProducts();
+          loadDashboardData();
+          if (onRefreshCatalog) onRefreshCatalog();
+        } else {
+          alert(res.error || 'Error al crear');
+        }
+      }
+    } catch (e) {
+      alert('Error al guardar el perfume');
+    }
+  };
+
+  const handleDeleteProduct = async (id) => {
+    if (!confirm('¿Estás seguro de que deseas eliminar este perfume del catálogo?')) return;
+    try {
+      const res = await deleteProduct(token, id);
+      if (res.success) {
+        setAdminProducts(prev => prev.filter(p => p.id !== id));
+        loadDashboardData();
+        if (onRefreshCatalog) onRefreshCatalog();
+      }
+    } catch (e) {
+      alert('Error al eliminar perfume');
     }
   };
 
@@ -378,6 +494,7 @@ export default function AdminPanel({ isOpen, onClose, onRefreshCatalog }) {
             <aside className="w-full md:w-64 bg-[#ecedee] border-r border-[#d7d7d7] p-3 flex md:flex-col gap-1 overflow-x-auto shrink-0">
               {[
                 { id: 'dashboard', label: 'Dashboard', icon: Database },
+                { id: 'products', label: 'Catálogo & 1.1', icon: Sparkles },
                 { id: 'commercial', label: 'Tarifas & WhatsApp', icon: Settings },
                 { id: 'sheets', label: 'Google Sheets', icon: FileSpreadsheet },
                 { id: 'images', label: 'Gestión de Fotos', icon: ImageIcon }
@@ -492,6 +609,276 @@ export default function AdminPanel({ isOpen, onClose, onRefreshCatalog }) {
                       </div>
                     </>
                   )}
+                </div>
+              )}
+
+              {/* TAB: CATÁLOGO Y CONFIGURACIÓN DE PERFUMERÍA 1.1 */}
+              {activeTab === 'products' && (
+                <div className="space-y-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#ecedee]">
+                    <div>
+                      <h3 className="text-2xl font-bold text-[#111111] tracking-tight">Gestión de Catálogo y Perfumería 1.1</h3>
+                      <p className="text-[13px] text-[#737780]">
+                        Configura y personaliza qué perfumes componen el catálogo de <strong>Perfumería 1.1</strong> en tiempo real.
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={() => handleOpenNewProduct('Perfumería 1.1')}
+                      className="px-4 py-2.5 rounded-[8px] bg-[#000aff] hover:bg-[#0008cc] text-white text-[13px] font-semibold flex items-center gap-2 cursor-pointer shadow-sm self-start sm:self-auto"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Nuevo Perfume (1.1)</span>
+                    </button>
+                  </div>
+
+                  {/* Formulario Modal de Creación / Edición */}
+                  {isCreatingProduct && (
+                    <div className="p-6 rounded-[12px] bg-[#ecedee]/60 border border-[#d7d7d7] space-y-4 animate-fadeIn">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-lg font-bold text-[#111111]">
+                          {editingProduct ? `Editar Perfume: ${editingProduct.name}` : 'Crear / Configurar Perfume'}
+                        </h4>
+                        <button
+                          onClick={() => {
+                            setIsCreatingProduct(false);
+                            setEditingProduct(null);
+                          }}
+                          className="p-1 rounded-full hover:bg-neutral-300 text-[#111111]"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      <form onSubmit={handleSaveProduct} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div>
+                          <label className="text-[12px] font-mono text-[#111111] font-semibold block mb-1">Nombre del Perfume:</label>
+                          <input
+                            type="text"
+                            required
+                            value={productForm.name}
+                            onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
+                            className="w-full px-3 py-2 bg-white rounded-[8px] border border-[#d7d7d7] text-[13px]"
+                            placeholder="Ej: SAUVAGE ELIXIR"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-[12px] font-mono text-[#111111] font-semibold block mb-1">Marca o Casa:</label>
+                          <input
+                            type="text"
+                            required
+                            value={productForm.brand}
+                            onChange={(e) => setProductForm({ ...productForm, brand: e.target.value })}
+                            className="w-full px-3 py-2 bg-white rounded-[8px] border border-[#d7d7d7] text-[13px]"
+                            placeholder="Ej: Dior"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-[12px] font-mono text-[#111111] font-semibold block mb-1">Categoría Comercial:</label>
+                          <select
+                            value={productForm.category}
+                            onChange={(e) => setProductForm({ ...productForm, category: e.target.value })}
+                            className="w-full px-3 py-2 bg-white rounded-[8px] border border-[#d7d7d7] text-[13px] font-semibold text-[#000aff]"
+                          >
+                            <option value="Perfumería 1.1">Perfumería 1.1 (Bajo Encargo)</option>
+                            <option value="Inspiraciones">Inspiraciones (Con Carrito)</option>
+                            <option value="Originales">Originales (Bajo Encargo)</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="text-[12px] font-mono text-[#111111] font-semibold block mb-1">Subcategoría:</label>
+                          <select
+                            value={productForm.subcategory || ''}
+                            onChange={(e) => setProductForm({ ...productForm, subcategory: e.target.value })}
+                            className="w-full px-3 py-2 bg-white rounded-[8px] border border-[#d7d7d7] text-[13px]"
+                          >
+                            <option value="Árabes">Árabes</option>
+                            <option value="Nicho">Nicho</option>
+                            <option value="Diseñador">Diseñador</option>
+                            <option value="">Sin subcategoría</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="text-[12px] font-mono text-[#111111] font-semibold block mb-1">Género:</label>
+                          <select
+                            value={productForm.gender}
+                            onChange={(e) => setProductForm({ ...productForm, gender: e.target.value })}
+                            className="w-full px-3 py-2 bg-white rounded-[8px] border border-[#d7d7d7] text-[13px]"
+                          >
+                            <option value="Unisex">Unisex</option>
+                            <option value="Hombre">Hombre</option>
+                            <option value="Mujer">Mujer</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="text-[12px] font-mono text-[#111111] font-semibold block mb-1">URL de Imagen (Opcional):</label>
+                          <input
+                            type="text"
+                            value={productForm.image_url}
+                            onChange={(e) => setProductForm({ ...productForm, image_url: e.target.value })}
+                            placeholder="./uploads/products/dior-sauvage.png"
+                            className="w-full px-3 py-2 bg-white rounded-[8px] border border-[#d7d7d7] text-[13px]"
+                          />
+                        </div>
+
+                        <div className="sm:col-span-2 lg:col-span-3">
+                          <label className="text-[12px] font-mono text-[#111111] font-semibold block mb-1">Familia Olfativa / Descripción:</label>
+                          <input
+                            type="text"
+                            value={productForm.description}
+                            onChange={(e) => setProductForm({ ...productForm, description: e.target.value, olfactory_family: e.target.value })}
+                            placeholder="Ej: AMADERADO ESPECIADO AROMATICO"
+                            className="w-full px-3 py-2 bg-white rounded-[8px] border border-[#d7d7d7] text-[13px]"
+                          />
+                        </div>
+
+                        <div className="sm:col-span-2 lg:col-span-3 flex items-center justify-end gap-2 pt-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsCreatingProduct(false);
+                              setEditingProduct(null);
+                            }}
+                            className="px-4 py-2 rounded-[8px] bg-white border border-[#d7d7d7] text-[13px] text-[#444955] cursor-pointer"
+                          >
+                            Cancelar
+                          </button>
+                          <button
+                            type="submit"
+                            className="px-5 py-2 rounded-[8px] bg-[#111111] text-white text-[13px] font-semibold hover:bg-[#222222] cursor-pointer"
+                          >
+                            {editingProduct ? 'Actualizar Perfume' : 'Guardar en Catálogo'}
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  )}
+
+                  {/* Filtros de Búsqueda y Categoría */}
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="relative flex-1">
+                      <Search className="w-4 h-4 text-[#737780] absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        placeholder="Buscar por nombre o casa en el catálogo..."
+                        value={prodSearch}
+                        onChange={(e) => setProdSearch(e.target.value)}
+                        className="w-full pl-9 pr-4 py-2 bg-[#ecedee] rounded-[8px] text-[13px] focus:outline-none focus:ring-1 focus:ring-[#000aff]"
+                      />
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setProdCategoryFilter('')}
+                        className={`px-3 py-1.5 rounded-[8px] text-[12px] font-mono cursor-pointer transition-all ${
+                          prodCategoryFilter === '' ? 'bg-[#111111] text-white font-bold' : 'bg-[#ecedee] text-[#444955]'
+                        }`}
+                      >
+                        Todos ({adminProducts.length})
+                      </button>
+
+                      <button
+                        onClick={() => setProdCategoryFilter('Perfumería 1.1')}
+                        className={`px-3 py-1.5 rounded-[8px] text-[12px] font-mono cursor-pointer transition-all flex items-center gap-1.5 ${
+                          prodCategoryFilter === 'Perfumería 1.1' ? 'bg-[#000aff] text-white font-bold shadow-sm' : 'bg-[#ecedee] text-[#000aff]'
+                        }`}
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>Perfumería 1.1 ({adminProducts.filter(p => p.category === 'Perfumería 1.1').length})</span>
+                      </button>
+
+                      <button
+                        onClick={() => setProdCategoryFilter('Inspiraciones')}
+                        className={`px-3 py-1.5 rounded-[8px] text-[12px] font-mono cursor-pointer transition-all ${
+                          prodCategoryFilter === 'Inspiraciones' ? 'bg-[#111111] text-white font-bold' : 'bg-[#ecedee] text-[#444955]'
+                        }`}
+                      >
+                        Inspiraciones ({adminProducts.filter(p => p.category === 'Inspiraciones').length})
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Tabla de Productos */}
+                  <div className="border border-[#ecedee] rounded-[10px] overflow-hidden max-h-[60vh] overflow-y-auto">
+                    <table className="w-full text-left text-[12px] font-mono">
+                      <thead className="bg-[#ecedee] sticky top-0 z-10">
+                        <tr>
+                          <th className="p-3">ID</th>
+                          <th className="p-3">Perfume</th>
+                          <th className="p-3">Casa</th>
+                          <th className="p-3">Categoría Actual</th>
+                          <th className="p-3 text-center">Configuración 1.1</th>
+                          <th className="p-3 text-right">Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {adminProducts
+                          .filter(p => {
+                            if (prodCategoryFilter && p.category !== prodCategoryFilter) return false;
+                            if (prodSearch.trim()) {
+                              const q = prodSearch.toLowerCase().trim();
+                              return (
+                                (p.name && p.name.toLowerCase().includes(q)) ||
+                                (p.brand && p.brand.toLowerCase().includes(q)) ||
+                                (p.id && p.id.toLowerCase().includes(q))
+                              );
+                            }
+                            return true;
+                          })
+                          .slice(0, 100)
+                          .map((p) => {
+                            const is11 = p.category === 'Perfumería 1.1';
+                            return (
+                              <tr key={p.id} className="border-b border-[#ecedee] hover:bg-neutral-50 transition-colors">
+                                <td className="p-3 text-[#737780]">{p.id}</td>
+                                <td className="p-3 font-bold text-[#111111]">{p.name}</td>
+                                <td className="p-3">{p.brand}</td>
+                                <td className="p-3">
+                                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                                    is11 ? 'bg-[#000aff] text-white' : 'bg-neutral-200 text-neutral-800'
+                                  }`}>
+                                    {p.category}
+                                  </span>
+                                </td>
+                                <td className="p-3 text-center">
+                                  <button
+                                    onClick={() => handleToggle11(p)}
+                                    className={`px-3 py-1 rounded-[6px] text-[11px] font-semibold transition-all cursor-pointer ${
+                                      is11
+                                        ? 'bg-red-50 text-red-700 hover:bg-red-100 border border-red-200'
+                                        : 'bg-[#e5e7ff] text-[#000aff] hover:bg-[#000aff] hover:text-white border border-[#000aff]/30'
+                                    }`}
+                                  >
+                                    {is11 ? 'Quitar de 1.1' : '+ Asignar a 1.1'}
+                                  </button>
+                                </td>
+                                <td className="p-3 text-right space-x-2">
+                                  <button
+                                    onClick={() => handleOpenEditProduct(p)}
+                                    className="p-1.5 rounded hover:bg-neutral-200 text-[#111111] cursor-pointer"
+                                    title="Editar datos"
+                                  >
+                                    <Edit className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteProduct(p.id)}
+                                    className="p-1.5 rounded hover:bg-red-100 text-red-600 cursor-pointer"
+                                    title="Eliminar del catálogo"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               )}
 

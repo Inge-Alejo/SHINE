@@ -186,10 +186,11 @@ export function CartProvider({ children, initialSettings }) {
    * REGLA: SIN precios, SIN tamaños en ml, SIN carrito.
    */
   const getWhatsAppAvailabilityUrl = (product) => {
+    const cat = product.displayCategory || product.category || 'Originales';
     let msg = `Hola, estoy interesado en consultar la disponibilidad de este perfume:\n\n`;
     msg += `Producto: ${product.name}\n`;
     msg += `Marca: ${product.brand}\n`;
-    msg += `Categoría: ${product.category}.\n\n`;
+    msg += `Categoría: ${cat}.\n\n`;
     msg += `¿Podrían brindarme más información?`;
 
     const cleanPhone = (settings.whatsapp_number || '573105964755').replace(/[^0-9]/g, '');

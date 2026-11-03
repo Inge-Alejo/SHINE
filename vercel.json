@@ -1,8 +1,23 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "cd frontend && npm install && npm run build",
-  "outputDirectory": "frontend/dist",
-  "cleanUrls": true,
+  "services": {
+    "app": {
+      "root": ".",
+      "runtime": "node"
+    },
+    "frontend": {
+      "root": "frontend",
+      "framework": "vite",
+      "bindings": [
+        {
+          "type": "service",
+          "service": "app",
+          "format": "url",
+          "env": "API_URL"
+        }
+      ]
+    }
+  },
   "headers": [
     {
       "source": "/api/(.*)",
@@ -18,24 +33,23 @@
     }
   ],
   "rewrites": [
-    { "source": "/backend/api/products.php", "destination": "/api/products" },
-    { "source": "/backend/api/settings.php", "destination": "/api/settings" },
-    { "source": "/backend/api/auth.php", "destination": "/api/auth" },
-    { "source": "/backend/api/dashboard.php", "destination": "/api/dashboard" },
-    { "source": "/backend/api/sheets_sync.php", "destination": "/api/sheets-sync" },
-    { "source": "/backend/api/image_manager.php", "destination": "/api/image-manager" },
-    { "source": "/backend/api/gemini_service.php", "destination": "/api/gemini" },
-    { "source": "/api/products.php", "destination": "/api/products" },
-    { "source": "/api/settings.php", "destination": "/api/settings" },
-    { "source": "/api/auth.php", "destination": "/api/auth" },
-    { "source": "/api/dashboard.php", "destination": "/api/dashboard" },
-    { "source": "/api/sheets_sync.php", "destination": "/api/sheets-sync" },
-    { "source": "/api/image_manager.php", "destination": "/api/image-manager" },
-    { "source": "/api/gemini.php", "destination": "/api/gemini" },
-    { "source": "/api/sheets-sync", "destination": "/api/sheets-sync" },
-    { "source": "/api/image-manager", "destination": "/api/image-manager" },
-    { "source": "/uploads/(.*)", "destination": "/uploads/$1" },
-    { "source": "/((?!api|uploads|favicon|icons|data).*)", "destination": "/index.html" }
+    {
+      "source": "/api/(.*)",
+      "destination": {
+        "service": "app"
+      }
+    },
+    {
+      "source": "/uploads/(.*)",
+      "destination": {
+        "service": "frontend"
+      }
+    },
+    {
+      "source": "/(.*)",
+      "destination": {
+        "service": "frontend"
+      }
+    }
   ]
 }
-

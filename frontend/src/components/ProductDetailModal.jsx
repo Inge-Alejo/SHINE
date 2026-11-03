@@ -5,9 +5,10 @@ import { useCart } from '../context/CartContext';
 export default function ProductDetailModal({ product, onClose }) {
   const { addToCart, getPriceForPresentation, getWhatsAppIndividualOrderUrl, getWhatsAppAvailabilityUrl } = useCart();
 
-  const isInspiracion = product?.category === 'Inspiraciones';
-  const isOriginal = product?.category === 'Originales';
-  const is11 = product?.category === 'Perfumería 1.1';
+  const effectiveCategory = product?.displayCategory || product?.category || 'Inspiraciones';
+  const isInspiracion = effectiveCategory === 'Inspiraciones';
+  const isOriginal = effectiveCategory === 'Originales';
+  const is11 = effectiveCategory === 'Perfumería 1.1';
 
   // Presentación por defecto para Inspiraciones (60 ml es la más popular)
   const [selectedPresentation, setSelectedPresentation] = useState('60 ml');
@@ -59,7 +60,7 @@ export default function ProductDetailModal({ product, onClose }) {
                   ? 'bg-[#111111] text-white' 
                   : 'bg-[#444955] text-white'
             }`}>
-              {product.category}
+              {effectiveCategory}
             </span>
           </div>
 

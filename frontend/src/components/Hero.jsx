@@ -67,6 +67,33 @@ const CURATED_BESTSELLERS = [
     image_url: "./uploads/products/louis-vuitton-ombre-nomade.png"
   },
   {
+    id: "SHINE-0260",
+    name: "GOOD GIRL",
+    brand: "Carolina Herrera",
+    category: "Inspiraciones",
+    subcategory: "Mujeres",
+    gender: "Mujer",
+    image_url: "./uploads/products/carolina-herrera-good-girl.png"
+  },
+  {
+    id: "SHINE-0356",
+    name: "DELINA",
+    brand: "Parfums de Marly",
+    category: "Inspiraciones",
+    subcategory: "Nicho",
+    gender: "Mujer",
+    image_url: "./uploads/products/parfums-de-marly-delina.png"
+  },
+  {
+    id: "SHINE-0186",
+    name: "LIBRE",
+    brand: "Yves Saint Laurent",
+    category: "Inspiraciones",
+    subcategory: "Mujeres",
+    gender: "Mujer",
+    image_url: "./uploads/products/ysl-libre.png"
+  },
+  {
     id: "ORIG-0001",
     name: "BACCARAT ROUGE 540 EXTRAIT",
     brand: "Maison Francis Kurkdjian",
@@ -166,11 +193,19 @@ export default function Hero({
     return merged.length > 0 ? merged : validCurated;
   }, [products]);
 
-  const [currentIndex, setCurrentIndex] = useState(0);
+  // Arrancar de inicio con un índice aleatorio en cada carga de página
+  const [currentIndex, setCurrentIndex] = useState(() => Math.floor(Math.random() * CURATED_BESTSELLERS.length));
   const [isFading, setIsFading] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
 
-  // Rotación aleatoria 100% automática cada 5 segundos
+  // Inicializar aleatoriamente cuando el pool de productos cargue
+  useEffect(() => {
+    if (rotatingPool.length > 0) {
+      setCurrentIndex(Math.floor(Math.random() * rotatingPool.length));
+    }
+  }, [rotatingPool.length]);
+
+  // Rotación continua 100% aleatoria (sin orden fijo) cada 4.5 segundos
   useEffect(() => {
     if (rotatingPool.length <= 1 || isPaused) return;
 
@@ -180,6 +215,7 @@ export default function Hero({
         setCurrentIndex((prev) => {
           if (rotatingPool.length <= 1) return 0;
           let next;
+          // Selección aleatoria pura garantizando no repetir el mismo inmediatamente
           do {
             next = Math.floor(Math.random() * rotatingPool.length);
           } while (next === prev && rotatingPool.length > 1);
@@ -187,10 +223,10 @@ export default function Hero({
         });
         setIsFading(false);
       }, 250);
-    }, 5000);
+    }, 4500);
 
     return () => clearInterval(timer);
-  }, [rotatingPool.length, currentIndex, isPaused]);
+  }, [rotatingPool.length, isPaused]);
 
   const currentProduct = rotatingPool[currentIndex] || CURATED_BESTSELLERS[0];
 
@@ -263,7 +299,7 @@ export default function Hero({
           </div>
         </div>
 
-        {/* Right Column: Floating Product Info Card Automática y Limpia */}
+        {/* Right Column: Floating Product Info Card Automática y 100% Aleatoria */}
         <div 
           onMouseEnter={() => setIsPaused(true)}
           onMouseLeave={() => setIsPaused(false)}

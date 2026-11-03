@@ -1,23 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "services": {
-    "app": {
-      "root": ".",
-      "runtime": "node"
-    },
-    "frontend": {
-      "root": "frontend",
-      "framework": "vite",
-      "bindings": [
-        {
-          "type": "service",
-          "service": "app",
-          "format": "url",
-          "env": "API_URL"
-        }
-      ]
-    }
-  },
+  "buildCommand": "cd frontend && npm install && npm run build",
+  "outputDirectory": "frontend/dist",
+  "cleanUrls": true,
   "headers": [
     {
       "source": "/api/(.*)",
@@ -33,23 +18,9 @@
     }
   ],
   "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": {
-        "service": "app"
-      }
-    },
-    {
-      "source": "/uploads/(.*)",
-      "destination": {
-        "service": "frontend"
-      }
-    },
-    {
-      "source": "/(.*)",
-      "destination": {
-        "service": "frontend"
-      }
-    }
+    { "source": "/backend/api/:path*", "destination": "/api/:path*" },
+    { "source": "/api/:path*.php", "destination": "/api/:path*" },
+    { "source": "/uploads/(.*)", "destination": "/uploads/$1" },
+    { "source": "/((?!api|uploads|favicon|icons|data).*)", "destination": "/index.html" }
   ]
 }

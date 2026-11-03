@@ -50,9 +50,13 @@ export default function CatalogSection({
       list = list.filter(p => p.brand === selectedBrand);
     }
 
-    // Filtro por Género
-    if (selectedGender) {
-      list = list.filter(p => p.gender === selectedGender);
+    // Filtro por Género (Hombre y Mujer incluyen fragancias Unisex para catálogo inclusivo)
+    if (selectedGender === 'Hombre') {
+      list = list.filter(p => p.gender === 'Hombre' || p.gender === 'Unisex');
+    } else if (selectedGender === 'Mujer') {
+      list = list.filter(p => p.gender === 'Mujer' || p.gender === 'Unisex');
+    } else if (selectedGender === 'Unisex') {
+      list = list.filter(p => p.gender === 'Unisex');
     }
 
     // Búsqueda textual
@@ -225,9 +229,9 @@ export default function CatalogSection({
               className="w-full px-3 py-2.5 bg-[#ecedee] rounded-[10px] text-[13px] text-[#111111] focus:outline-none focus:ring-1 focus:ring-[#000aff]"
             >
               <option value="">Todos los Géneros</option>
-              <option value="Hombre">Hombre (M)</option>
-              <option value="Mujer">Mujer (F)</option>
-              <option value="Unisex">Unisex (X)</option>
+              <option value="Hombre">Hombre (incluye Unisex)</option>
+              <option value="Mujer">Mujer (incluye Unisex)</option>
+              <option value="Unisex">Solo Unisex</option>
             </select>
           </div>
 

@@ -36,6 +36,14 @@ async function callGeminiModel(ai, prompt, isJson = true) {
   throw lastError || new Error('No se pudo conectar con ningún modelo de Gemini disponible');
 }
 
+function normalizeGender(raw) {
+  const str = String(raw || '').toLowerCase().trim();
+  if (str.includes('unisex') || str.includes('ambos') || str.includes('compartid')) return 'Unisex';
+  if (str.includes('masculin') || str.includes('hombre')) return 'Hombre';
+  if (str.includes('femenin') || str.includes('mujer')) return 'Mujer';
+  return 'Unisex';
+}
+
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
 
@@ -71,10 +79,11 @@ export default async function handler(req, res) {
 
       const prompt = `Actúa como un maestro perfumista internacional y redactor editorial de fragancias de lujo.
 Proporciona la ficha técnica oficial del perfume: "${perfume_name}" de la casa "${brand || ''}".
+IMPORTANTE sobre el género: Clasifica estrictamente como "Hombre", "Mujer" o "Unisex". Ten en cuenta que la gran mayoría de perfumes árabes, orientales y nicho (como Afnan, Lattafa, Al Haramain, Armaf, Creed, Tom Ford, etc.) son UNISEX. En caso de duda o versatilidad, clasifícalo siempre como "Unisex".
 Responde ÚNICAMENTE en formato JSON con la siguiente estructura exacta:
 {
   "olfactory_family": "Familia olfativa principal (ej: Oriental Amaderada)",
-  "gender": "Masculino, Femenino o Unisex",
+  "gender": "Hombre, Mujer o Unisex",
   "top_notes": "Notas de salida separadas por coma",
   "heart_notes": "Notas de corazón separadas por coma",
   "base_notes": "Notas de fondo separadas por coma",
@@ -84,6 +93,7 @@ Responde ÚNICAMENTE en formato JSON con la siguiente estructura exacta:
 
       const { response, modelUsed } = await callGeminiModel(ai, prompt, true);
       const parsed = JSON.parse(response.text.trim());
+      parsed.gender = normalizeGender(parsed.gender);
 
       // Si se envió product_id, actualizar la base de datos automáticamente
       if (product_id) {
@@ -134,10 +144,11 @@ Responde ÚNICAMENTE en formato JSON con la siguiente estructura exacta:
         const item = items[i];
         try {
           const prompt = `Ficha técnica concisa para perfume "${item.name}" de "${item.brand || ''}".
+IMPORTANTE: "gender" debe ser estrictamente "Hombre", "Mujer" o "Unisex". Recuerda que la gran mayoría de perfumes árabes u orientales son Unisex.
 JSON estricto:
 {
   "olfactory_family": "Familia",
-  "gender": "Masculino, Femenino o Unisex",
+  "gender": "Hombre, Mujer o Unisex",
   "description": "Descripción elegante de 2 frases en español.",
   "top_notes": "Notas salida",
   "heart_notes": "Notas corazón",
@@ -146,6 +157,7 @@ JSON estricto:
 
           const { response: resp, modelUsed } = await callGeminiModel(ai, prompt, true);
           const pData = JSON.parse(resp.text.trim());
+          pData.gender = normalizeGender(pData.gender);
 
           await execute(
             `UPDATE products 

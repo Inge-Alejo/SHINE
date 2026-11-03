@@ -63,6 +63,7 @@ export default function AdminPanel({ isOpen, onClose, onRefreshCatalog }) {
   // Paginación y escalabilidad del catálogo
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(50); // 25, 50, 100, 250, 500, 'all'
+  const [prodGenderFilter, setProdGenderFilter] = useState(''); // '', 'Unisex', 'Hombre', 'Mujer'
 
   // Selección múltiple para automatización IA
   const [selectedProdIds, setSelectedProdIds] = useState([]);
@@ -185,6 +186,26 @@ export default function AdminPanel({ isOpen, onClose, onRefreshCatalog }) {
       }
     } catch (e) {
       alert('Error de conexión al actualizar categoría');
+    }
+  };
+
+  // Alternar rápidamente el género de un perfume (Unisex -> Hombre -> Mujer -> Unisex)
+  const handleToggleGender = async (p) => {
+    const current = p.gender || 'Unisex';
+    const nextGender = current === 'Unisex' ? 'Hombre' : current === 'Hombre' ? 'Mujer' : 'Unisex';
+    try {
+      const res = await updateProduct(token, p.id, {
+        ...p,
+        gender: nextGender
+      });
+      if (res.success) {
+        setAdminProducts(prev => prev.map(item => item.id === p.id ? { ...item, gender: nextGender } : item));
+        if (onRefreshCatalog) onRefreshCatalog();
+      } else {
+        alert(res.error || 'Error al cambiar género');
+      }
+    } catch (e) {
+      alert('Error de conexión al cambiar género');
     }
   };
 
@@ -1024,6 +1045,24 @@ export default function AdminPanel({ isOpen, onClose, onRefreshCatalog }) {
                             <option value="all">Todos ({adminProducts.length})</option>
                           </select>
                         </div>
+
+                        {/* Selector de Género */}
+                        <div className="flex items-center gap-1 bg-[#ecedee] px-2.5 py-1 rounded-[8px] text-[12px] font-mono">
+                          <span className="text-[#737780]">Género:</span>
+                          <select
+                            value={prodGenderFilter}
+                            onChange={(e) => {
+                              setProdGenderFilter(e.target.value);
+                              setCurrentPage(1);
+                            }}
+                            className="bg-transparent font-bold text-[#111111] cursor-pointer focus:outline-none"
+                          >
+                            <option value="">Todos</option>
+                            <option value="Unisex">Unisex</option>
+                            <option value="Hombre">Hombre</option>
+                            <option value="Mujer">Mujer</option>
+                          </select>
+                        </div>
                       </div>
                     </div>
 
@@ -1058,6 +1097,7 @@ export default function AdminPanel({ isOpen, onClose, onRefreshCatalog }) {
                   {(() => {
                     const filteredList = adminProducts.filter(p => {
                       if (prodCategoryFilter && p.category !== prodCategoryFilter) return false;
+                      if (prodGenderFilter && (p.gender || 'Unisex') !== prodGenderFilter) return false;
                       if (prodSearch.trim()) {
                         const q = prodSearch.toLowerCase().trim();
                         return (
@@ -1122,6 +1162,7 @@ export default function AdminPanel({ isOpen, onClose, onRefreshCatalog }) {
                                 </th>
                                 <th className="p-3">Perfume</th>
                                 <th className="p-3">Casa</th>
+                                <th className="p-3 text-center">Género</th>
                                 <th className="p-3">Notas Olfativas IA</th>
                                 <th className="p-3">Categoría</th>
                                 <th className="p-3 text-center">Config 1.1</th>
@@ -1131,7 +1172,7 @@ export default function AdminPanel({ isOpen, onClose, onRefreshCatalog }) {
                             <tbody>
                               {displayedList.length === 0 ? (
                                 <tr>
-                                  <td colSpan={7} className="p-8 text-center text-[#737780]">
+                                  <td colSpan={8} className="p-8 text-center text-[#737780]">
                                     No se encontraron perfumes con los filtros aplicados.
                                   </td>
                                 </tr>
@@ -1168,6 +1209,22 @@ export default function AdminPanel({ isOpen, onClose, onRefreshCatalog }) {
                                         </div>
                                       </td>
                                       <td className="p-3">{p.brand}</td>
+                                      <td className="p-3 text-center">
+                                        <button
+                                          type="button"
+                                          onClick={() => handleToggleGender(p)}
+                                          title="Clic para alternar género: Unisex → Hombre → Mujer"
+                                          className={`px-2 py-0.5 rounded-full text-[10px] font-semibold cursor-pointer transition-all border ${
+                                            (p.gender || 'Unisex') === 'Unisex'
+                                              ? 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100'
+                                              : p.gender === 'Hombre'
+                                              ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
+                                              : 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
+                                          }`}
+                                        >
+                                          {p.gender || 'Unisex'} ↻
+                                        </button>
+                                      </td>
                                       <td className="p-3">
                                         {hasNotes ? (
                                           <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800 flex items-center gap-1 w-max">

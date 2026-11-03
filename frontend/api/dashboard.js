@@ -24,6 +24,9 @@ export default async function handler(req, res) {
     const withImgRow = await getOne("SELECT count(*) as count FROM products WHERE image_url IS NOT NULL AND image_url != ''");
     const withImage = parseInt(withImgRow?.count || 0, 10);
 
+    const withNotesRow = await getOne("SELECT count(*) as count FROM products WHERE olfactory_family IS NOT NULL AND olfactory_family != ''");
+    const withNotes = parseInt(withNotesRow?.count || 0, 10);
+
     let sheetsConfig = { connection_status: 'Sin configurar', total_detected: 0 };
     try {
       sheetsConfig = (await getOne('SELECT * FROM sheets_config WHERE id = 1')) || sheetsConfig;
@@ -42,6 +45,8 @@ export default async function handler(req, res) {
         by_subcategory: bySubcategory,
         with_image: withImage,
         without_image: Math.max(0, total - withImage),
+        with_notes: withNotes,
+        without_notes: Math.max(0, total - withNotes),
         sheets_status: {
           status: sheetsConfig.connection_status || 'Sin configurar',
           sheet_url: sheetsConfig.sheet_url || '',

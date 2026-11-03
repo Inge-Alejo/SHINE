@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { 
   X, Lock, ShieldCheck, Database, RefreshCw, Settings, Image as ImageIcon, 
   Plus, Edit, Trash2, CheckCircle2, AlertTriangle, ExternalLink, Sparkles, 
-  Upload, Search, FileSpreadsheet, Eye, LogOut 
+  Upload, Search, Eye, LogOut, Bot, CheckSquare, Square, Play, Pause, Zap 
 } from 'lucide-react';
 import { 
   adminLogin, fetchDashboard, updateCommercialSettings, createProduct, 
-  updateProduct, deleteProduct, getSheetsConfig, saveSheetsConfig, 
-  testSheetsConnection, triggerSheetsSync, disconnectSheets, 
-  fetchPendingImages, uploadProductImage, approveImageCandidate 
+  updateProduct, deleteProduct, fetchProducts,
+  fetchPendingImages, uploadProductImage, approveImageCandidate,
+  enrichWithGemini, batchEnrichWithGemini, getGeminiBottleReference
 } from '../services/api';
 import { useCart } from '../context/CartContext';
 
@@ -22,7 +22,7 @@ export default function AdminPanel({ isOpen, onClose, onRefreshCatalog }) {
   const [authError, setAuthError] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
-  // Tabs del panel: 'dashboard', 'products', 'commercial', 'sheets', 'images'
+  // Tabs del panel: 'dashboard', 'products', 'commercial', 'gemini', 'images'
   const [activeTab, setActiveTab] = useState('dashboard');
 
   // Datos del Dashboard
@@ -58,15 +58,16 @@ export default function AdminPanel({ isOpen, onClose, onRefreshCatalog }) {
   });
   const [commSuccess, setCommSuccess] = useState('');
 
-  // Google Sheets
-  const [sheetsConfig, setSheetsConfig] = useState(null);
-  const [sheetUrlInput, setSheetUrlInput] = useState('');
-  const [sheetTabInput, setSheetTabInput] = useState('Hoja 1');
-  const [sheetTestResult, setSheetTestResult] = useState(null);
-  const [sheetSyncResult, setSheetSyncResult] = useState(null);
-  const [isTestingSheet, setIsTestingSheet] = useState(false);
-  const [isSyncingSheet, setIsSyncingSheet] = useState(false);
-  const [syncHistoryList, setSyncHistoryList] = useState([]);
+  // Selección múltiple para automatización IA
+  const [selectedProdIds, setSelectedProdIds] = useState([]);
+  const [filterImageStatus, setFilterImageStatus] = useState('all'); // 'all', 'with_image', 'without_image'
+  const [filterNotesStatus, setFilterNotesStatus] = useState('all'); // 'all', 'with_notes', 'without_notes'
+
+  // Automatización Gemini IA & Scraping
+  const [isAiRunning, setIsAiRunning] = useState(false);
+  const [aiProgress, setAiProgress] = useState({ current: 0, total: 0, currentName: '', status: '' });
+  const [singleEnrichingId, setSingleEnrichingId] = useState(null);
+  const [aiLogs, setAiLogs] = useState([]);
 
   // Imágenes
   const [pendingImagesData, setPendingImagesData] = useState({ products_without_image: [], image_candidates: [] });
@@ -79,7 +80,6 @@ export default function AdminPanel({ isOpen, onClose, onRefreshCatalog }) {
   useEffect(() => {
     if (isOpen && token) {
       loadDashboardData();
-      loadSheetsData();
       loadPendingImages();
       loadAdminProducts();
     }
@@ -125,20 +125,7 @@ export default function AdminPanel({ isOpen, onClose, onRefreshCatalog }) {
     }
   };
 
-  const loadSheetsData = async () => {
-    if (!token) return;
-    try {
-      const res = await getSheetsConfig(token);
-      if (res.success) {
-        setSheetsConfig(res.config);
-        setSheetUrlInput(res.config?.sheet_url || '');
-        setSheetTabInput(res.config?.sheet_tab || 'Hoja 1');
-        setSyncHistoryList(res.history || []);
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  };
+  // Fin de carga de dashboard
 
   const loadPendingImages = async () => {
     if (!token) return;
@@ -289,70 +276,174 @@ export default function AdminPanel({ isOpen, onClose, onRefreshCatalog }) {
     }
   };
 
-  // Probar conexión Google Sheets
-  const handleTestSheet = async () => {
-    setIsTestingSheet(true);
-    setSheetTestResult(null);
-    try {
-      const res = await testSheetsConnection(token, {
-        sheet_url: sheetUrlInput,
-        sheet_tab: sheetTabInput
-      });
-      setSheetTestResult(res);
-      loadSheetsData();
-    } catch (e) {
-      setSheetTestResult({ success: false, error: 'Error de conexión' });
-    } finally {
-      setIsTestingSheet(false);
+  // Alternar selección de un perfume con checkbox
+  const handleToggleSelectProduct = (id) => {
+    setSelectedProdIds(prev => 
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
+
+  // Seleccionar / Deseleccionar todos los mostrados
+  const handleSelectAllProducts = (list) => {
+    const listIds = list.map(p => p.id);
+    const allSelected = listIds.length > 0 && listIds.every(id => selectedProdIds.includes(id));
+    if (allSelected) {
+      setSelectedProdIds(prev => prev.filter(id => !listIds.includes(id)));
+    } else {
+      setSelectedProdIds(prev => Array.from(new Set([...prev, ...listIds])));
     }
   };
 
-  // Guardar enlace de Google Sheets
-  const handleSaveSheetConfig = async () => {
+  // Enriquecer un solo producto con Gemini IA
+  const handleEnrichSingle = async (prod) => {
+    setSingleEnrichingId(prod.id);
     try {
-      const res = await saveSheetsConfig(token, {
-        sheet_url: sheetUrlInput,
-        sheet_tab: sheetTabInput
+      const res = await enrichWithGemini(token, {
+        perfume_name: prod.name,
+        brand: prod.brand,
+        product_id: prod.id
       });
-      if (res.success) {
-        alert('Enlace de Google Sheets guardado con éxito');
-        loadSheetsData();
+      if (res.success && res.data) {
+        setAdminProducts(prev => prev.map(p => p.id === prod.id ? {
+          ...p,
+          olfactory_family: res.data.olfactory_family,
+          description: res.data.description,
+          gender: res.data.gender || p.gender
+        } : p));
+        setAiLogs(prev => [
+          { time: new Date().toLocaleTimeString(), name: prod.name, status: 'success', details: res.data.olfactory_family },
+          ...prev.slice(0, 49)
+        ]);
+        alert(`¡Ficha técnica generada con Gemini IA para ${prod.name}!\n\nFamilia: ${res.data.olfactory_family}\nSalida: ${res.data.top_notes || 'N/A'}`);
+        if (onRefreshCatalog) onRefreshCatalog();
+      } else {
+        alert(res.error || 'No se pudo obtener información con Gemini IA');
       }
     } catch (e) {
-      alert('Error al guardar configuración');
-    }
-  };
-
-  // Sincronizar Google Sheets
-  const handleTriggerSync = async () => {
-    if (!confirm('¿Deseas iniciar la sincronización con Google Sheets? Los cambios manuales e imágenes locales serán respetados.')) return;
-    setIsSyncingSheet(true);
-    setSheetSyncResult(null);
-    try {
-      const res = await triggerSheetsSync(token);
-      setSheetSyncResult(res);
-      loadSheetsData();
-      loadDashboardData();
-      if (onRefreshCatalog) onRefreshCatalog();
-    } catch (e) {
-      setSheetSyncResult({ success: false, error: 'Error al sincronizar' });
+      alert('Error de conexión con el servicio de Gemini IA');
     } finally {
-      setIsSyncingSheet(false);
+      setSingleEnrichingId(null);
     }
   };
 
-  // Desconectar Google Sheets
-  const handleDisconnectSheet = async () => {
-    if (!confirm('¿Seguro que deseas desconectar Google Sheets? El catálogo local se mantendrá intacto.')) return;
-    try {
-      await disconnectSheets(token);
-      setSheetUrlInput('');
-      setSheetTestResult(null);
-      setSheetSyncResult(null);
-      loadSheetsData();
-    } catch (e) {
-      alert('Error al desconectar');
+  // Procesar seleccionados con Gemini IA
+  const handleProcessSelectedAi = async () => {
+    if (selectedProdIds.length === 0) {
+      alert('Selecciona al menos un perfume de la lista con la casilla de verificación.');
+      return;
     }
+
+    const itemsToProcess = adminProducts.filter(p => selectedProdIds.includes(p.id));
+    if (!confirm(`¿Deseas procesar ${itemsToProcess.length} perfume(s) seleccionados con Gemini IA para obtener notas olfativas y descripción?`)) return;
+
+    setIsAiRunning(true);
+    setAiProgress({ current: 0, total: itemsToProcess.length, currentName: '', status: 'Iniciando...' });
+
+    let successCount = 0;
+
+    for (let i = 0; i < itemsToProcess.length; i++) {
+      const p = itemsToProcess[i];
+      setAiProgress({
+        current: i + 1,
+        total: itemsToProcess.length,
+        currentName: `${p.name} (${p.brand})`,
+        status: `Analizando ${i + 1} de ${itemsToProcess.length}...`
+      });
+
+      try {
+        const res = await enrichWithGemini(token, {
+          perfume_name: p.name,
+          brand: p.brand,
+          product_id: p.id
+        });
+
+        if (res.success && res.data) {
+          successCount++;
+          setAdminProducts(prev => prev.map(item => item.id === p.id ? {
+            ...item,
+            olfactory_family: res.data.olfactory_family,
+            description: res.data.description,
+            gender: res.data.gender || item.gender
+          } : item));
+
+          setAiLogs(prev => [
+            { time: new Date().toLocaleTimeString(), name: p.name, status: 'success', details: res.data.olfactory_family },
+            ...prev.slice(0, 49)
+          ]);
+        }
+      } catch (err) {
+        setAiLogs(prev => [
+          { time: new Date().toLocaleTimeString(), name: p.name, status: 'error', details: err.message },
+          ...prev.slice(0, 49)
+        ]);
+      }
+
+      await new Promise(r => setTimeout(r, 250));
+    }
+
+    setIsAiRunning(false);
+    setSelectedProdIds([]);
+    loadDashboardData();
+    if (onRefreshCatalog) onRefreshCatalog();
+    alert(`¡Proceso IA completado! ${successCount} de ${itemsToProcess.length} perfumes enriquecidos exitosamente.`);
+  };
+
+  // Procesar todo el catálogo completo que esté pendiente
+  const handleProcessAllCatalogAi = async () => {
+    const pending = adminProducts.filter(p => !p.olfactory_family || p.olfactory_family.length < 5 || !p.description);
+    const targetList = pending.length > 0 ? pending : adminProducts;
+
+    if (!confirm(`¿Iniciar escaneo y enriquecimiento con IA para ${targetList.length} perfumes? Las notas olfativas y descripciones se guardarán directamente en la base de datos.`)) return;
+
+    setIsAiRunning(true);
+    setAiProgress({ current: 0, total: targetList.length, currentName: '', status: 'Iniciando escaneo masivo...' });
+
+    let successCount = 0;
+
+    for (let i = 0; i < targetList.length; i++) {
+      const p = targetList[i];
+      setAiProgress({
+        current: i + 1,
+        total: targetList.length,
+        currentName: `${p.name} (${p.brand})`,
+        status: `Escaneando e indexando ${i + 1} de ${targetList.length}...`
+      });
+
+      try {
+        const res = await enrichWithGemini(token, {
+          perfume_name: p.name,
+          brand: p.brand,
+          product_id: p.id
+        });
+
+        if (res.success && res.data) {
+          successCount++;
+          setAdminProducts(prev => prev.map(item => item.id === p.id ? {
+            ...item,
+            olfactory_family: res.data.olfactory_family,
+            description: res.data.description,
+            gender: res.data.gender || item.gender
+          } : item));
+
+          setAiLogs(prev => [
+            { time: new Date().toLocaleTimeString(), name: p.name, status: 'success', details: res.data.olfactory_family },
+            ...prev.slice(0, 49)
+          ]);
+        }
+      } catch (err) {
+        setAiLogs(prev => [
+          { time: new Date().toLocaleTimeString(), name: p.name, status: 'error', details: err.message },
+          ...prev.slice(0, 49)
+        ]);
+      }
+
+      await new Promise(r => setTimeout(r, 250));
+    }
+
+    setIsAiRunning(false);
+    loadDashboardData();
+    if (onRefreshCatalog) onRefreshCatalog();
+    alert(`¡Scraping IA masivo finalizado! ${successCount} perfumes enriquecidos y guardados en Neon Postgres.`);
   };
 
   // Subir imagen
@@ -496,7 +587,7 @@ export default function AdminPanel({ isOpen, onClose, onRefreshCatalog }) {
                 { id: 'dashboard', label: 'Dashboard', icon: Database },
                 { id: 'products', label: 'Catálogo & 1.1', icon: Sparkles },
                 { id: 'commercial', label: 'Tarifas & WhatsApp', icon: Settings },
-                { id: 'sheets', label: 'Google Sheets', icon: FileSpreadsheet },
+                { id: 'gemini', label: 'Gemini IA & Scraping', icon: Bot },
                 { id: 'images', label: 'Gestión de Fotos', icon: ImageIcon }
               ].map((tab) => {
                 const Icon = tab.icon;
@@ -583,29 +674,31 @@ export default function AdminPanel({ isOpen, onClose, onRefreshCatalog }) {
                         </div>
                       </div>
 
-                      {/* Sheets status snapshot */}
+                      {/* Estado de Automatización & Gemini IA */}
                       <div className="p-5 rounded-[10px] border border-[#ecedee] space-y-3 bg-[#ecedee]/40">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
-                            <FileSpreadsheet className="w-5 h-5 text-[#000aff]" />
-                            <h4 className="text-base font-bold text-[#111111]">Estado de Sincronización Google Sheets</h4>
+                            <Bot className="w-5 h-5 text-[#000aff]" />
+                            <h4 className="text-base font-bold text-[#111111]">Automatización & Gemini IA</h4>
                           </div>
-                          <span className={`text-[12px] font-mono px-3 py-1 rounded-full font-bold ${
-                            dashboardData.sheets_status.status === 'Conexión válida' || dashboardData.sheets_status.status === 'Sincronización completada'
-                              ? 'bg-green-100 text-green-800'
-                              : dashboardData.sheets_status.status === 'Sin configurar'
-                                ? 'bg-neutral-200 text-neutral-800'
-                                : 'bg-amber-100 text-amber-800'
-                          }`}>
-                            {dashboardData.sheets_status.status}
+                          <span className="text-[12px] font-mono px-3 py-1 rounded-full font-bold bg-[#e5e7ff] text-[#000aff]">
+                            Activo & En Línea
                           </span>
                         </div>
                         <p className="text-[13px] text-[#444955]">
-                          Última sincronización: <strong>{dashboardData.sheets_status.last_sync_at || 'Nunca'}</strong> • 
-                          Detectados: <strong>{dashboardData.sheets_status.total_detected}</strong> • 
-                          Agregados: <strong>{dashboardData.sheets_status.total_added}</strong> • 
-                          Omitidos: <strong>{dashboardData.sheets_status.total_skipped}</strong>
+                          Catálogo Total: <strong>{dashboardData.total_products}</strong> perfumes • 
+                          Con Fotografía: <strong>{dashboardData.with_image}</strong> • 
+                          Pendientes de enriquecer: <strong>{dashboardData.without_image}</strong>
                         </p>
+                        <div className="pt-1 flex gap-2">
+                          <button
+                            onClick={() => setActiveTab('gemini')}
+                            className="px-3.5 py-1.5 rounded-[8px] bg-[#000aff] text-white text-[12px] font-semibold flex items-center gap-1.5 hover:bg-[#0008cc] cursor-pointer"
+                          >
+                            <Bot className="w-3.5 h-3.5" />
+                            <span>Abrir Centro de Scraping IA</span>
+                          </button>
+                        </div>
                       </div>
                     </>
                   )}
@@ -760,124 +853,214 @@ export default function AdminPanel({ isOpen, onClose, onRefreshCatalog }) {
                   )}
 
                   {/* Filtros de Búsqueda y Categoría */}
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    <div className="relative flex-1">
-                      <Search className="w-4 h-4 text-[#737780] absolute left-3 top-1/2 -translate-y-1/2" />
-                      <input
-                        type="text"
-                        placeholder="Buscar por nombre o casa en el catálogo..."
-                        value={prodSearch}
-                        onChange={(e) => setProdSearch(e.target.value)}
-                        className="w-full pl-9 pr-4 py-2 bg-[#ecedee] rounded-[8px] text-[13px] focus:outline-none focus:ring-1 focus:ring-[#000aff]"
-                      />
+                  <div className="space-y-3">
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <div className="relative flex-1">
+                        <Search className="w-4 h-4 text-[#737780] absolute left-3 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="text"
+                          placeholder="Buscar por nombre o casa en el catálogo..."
+                          value={prodSearch}
+                          onChange={(e) => setProdSearch(e.target.value)}
+                          className="w-full pl-9 pr-4 py-2 bg-[#ecedee] rounded-[8px] text-[13px] focus:outline-none focus:ring-1 focus:ring-[#000aff]"
+                        />
+                      </div>
+
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          onClick={() => setProdCategoryFilter('')}
+                          className={`px-3 py-1.5 rounded-[8px] text-[12px] font-mono cursor-pointer transition-all ${
+                            prodCategoryFilter === '' ? 'bg-[#111111] text-white font-bold' : 'bg-[#ecedee] text-[#444955]'
+                          }`}
+                        >
+                          Todos ({adminProducts.length})
+                        </button>
+
+                        <button
+                          onClick={() => setProdCategoryFilter('Perfumería 1.1')}
+                          className={`px-3 py-1.5 rounded-[8px] text-[12px] font-mono cursor-pointer transition-all flex items-center gap-1.5 ${
+                            prodCategoryFilter === 'Perfumería 1.1' ? 'bg-[#000aff] text-white font-bold shadow-sm' : 'bg-[#ecedee] text-[#000aff]'
+                          }`}
+                        >
+                          <Sparkles className="w-3.5 h-3.5" />
+                          <span>Perfumería 1.1 ({adminProducts.filter(p => p.category === 'Perfumería 1.1').length})</span>
+                        </button>
+
+                        <button
+                          onClick={() => setProdCategoryFilter('Inspiraciones')}
+                          className={`px-3 py-1.5 rounded-[8px] text-[12px] font-mono cursor-pointer transition-all ${
+                            prodCategoryFilter === 'Inspiraciones' ? 'bg-[#111111] text-white font-bold' : 'bg-[#ecedee] text-[#444955]'
+                          }`}
+                        >
+                          Inspiraciones ({adminProducts.filter(p => p.category === 'Inspiraciones').length})
+                        </button>
+                      </div>
                     </div>
 
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setProdCategoryFilter('')}
-                        className={`px-3 py-1.5 rounded-[8px] text-[12px] font-mono cursor-pointer transition-all ${
-                          prodCategoryFilter === '' ? 'bg-[#111111] text-white font-bold' : 'bg-[#ecedee] text-[#444955]'
-                        }`}
-                      >
-                        Todos ({adminProducts.length})
-                      </button>
-
-                      <button
-                        onClick={() => setProdCategoryFilter('Perfumería 1.1')}
-                        className={`px-3 py-1.5 rounded-[8px] text-[12px] font-mono cursor-pointer transition-all flex items-center gap-1.5 ${
-                          prodCategoryFilter === 'Perfumería 1.1' ? 'bg-[#000aff] text-white font-bold shadow-sm' : 'bg-[#ecedee] text-[#000aff]'
-                        }`}
-                      >
-                        <Sparkles className="w-3.5 h-3.5" />
-                        <span>Perfumería 1.1 ({adminProducts.filter(p => p.category === 'Perfumería 1.1').length})</span>
-                      </button>
-
-                      <button
-                        onClick={() => setProdCategoryFilter('Inspiraciones')}
-                        className={`px-3 py-1.5 rounded-[8px] text-[12px] font-mono cursor-pointer transition-all ${
-                          prodCategoryFilter === 'Inspiraciones' ? 'bg-[#111111] text-white font-bold' : 'bg-[#ecedee] text-[#444955]'
-                        }`}
-                      >
-                        Inspiraciones ({adminProducts.filter(p => p.category === 'Inspiraciones').length})
-                      </button>
-                    </div>
+                    {/* Barra de Acciones por Lote / Selección Múltiple */}
+                    {selectedProdIds.length > 0 && (
+                      <div className="p-3 bg-[#e5e7ff] border border-[#000aff]/30 rounded-[10px] flex flex-wrap items-center justify-between gap-3 animate-fadeIn">
+                        <div className="flex items-center gap-2 text-[13px] text-[#000aff] font-bold">
+                          <CheckSquare className="w-4 h-4" />
+                          <span>{selectedProdIds.length} perfume(s) seleccionado(s)</span>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <button
+                            onClick={handleProcessSelectedAi}
+                            disabled={isAiRunning}
+                            className="px-3.5 py-1.5 rounded-[8px] bg-[#000aff] hover:bg-[#0008cc] text-white text-[12px] font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-sm"
+                          >
+                            <Zap className="w-3.5 h-3.5" />
+                            <span>Procesar seleccionados con IA ({selectedProdIds.length})</span>
+                          </button>
+                          <button
+                            onClick={() => setSelectedProdIds([])}
+                            className="px-3 py-1.5 rounded-[8px] bg-white border border-[#d7d7d7] text-[#444955] hover:bg-neutral-100 text-[12px] font-medium cursor-pointer"
+                          >
+                            Deseleccionar
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
-                  {/* Tabla de Productos */}
+                  {/* Tabla de Productos con Selección para Scraping */}
                   <div className="border border-[#ecedee] rounded-[10px] overflow-hidden max-h-[60vh] overflow-y-auto">
-                    <table className="w-full text-left text-[12px] font-mono">
-                      <thead className="bg-[#ecedee] sticky top-0 z-10">
-                        <tr>
-                          <th className="p-3">ID</th>
-                          <th className="p-3">Perfume</th>
-                          <th className="p-3">Casa</th>
-                          <th className="p-3">Categoría Actual</th>
-                          <th className="p-3 text-center">Configuración 1.1</th>
-                          <th className="p-3 text-right">Acciones</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {adminProducts
-                          .filter(p => {
-                            if (prodCategoryFilter && p.category !== prodCategoryFilter) return false;
-                            if (prodSearch.trim()) {
-                              const q = prodSearch.toLowerCase().trim();
+                    {(() => {
+                      const filteredList = adminProducts.filter(p => {
+                        if (prodCategoryFilter && p.category !== prodCategoryFilter) return false;
+                        if (prodSearch.trim()) {
+                          const q = prodSearch.toLowerCase().trim();
+                          return (
+                            (p.name && p.name.toLowerCase().includes(q)) ||
+                            (p.brand && p.brand.toLowerCase().includes(q)) ||
+                            (p.id && p.id.toLowerCase().includes(q))
+                          );
+                        }
+                        return true;
+                      });
+                      const displayedList = filteredList.slice(0, 100);
+                      const allCurrentSelected = displayedList.length > 0 && displayedList.every(p => selectedProdIds.includes(p.id));
+
+                      return (
+                        <table className="w-full text-left text-[12px] font-mono">
+                          <thead className="bg-[#ecedee] sticky top-0 z-10">
+                            <tr>
+                              <th className="p-3 w-10 text-center">
+                                <input
+                                  type="checkbox"
+                                  className="w-4 h-4 cursor-pointer accent-[#000aff]"
+                                  checked={allCurrentSelected}
+                                  onChange={() => handleSelectAllProducts(displayedList)}
+                                  title="Seleccionar / deseleccionar todos los visibles"
+                                />
+                              </th>
+                              <th className="p-3">Perfume</th>
+                              <th className="p-3">Casa</th>
+                              <th className="p-3">Notas Olfativas IA</th>
+                              <th className="p-3">Categoría</th>
+                              <th className="p-3 text-center">Config 1.1</th>
+                              <th className="p-3 text-right">Acciones</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {displayedList.map((p) => {
+                              const is11 = p.category === 'Perfumería 1.1';
+                              const isSelected = selectedProdIds.includes(p.id);
+                              const hasNotes = p.olfactory_family && p.olfactory_family.length > 4;
+                              const isEnrichingThis = singleEnrichingId === p.id;
+
                               return (
-                                (p.name && p.name.toLowerCase().includes(q)) ||
-                                (p.brand && p.brand.toLowerCase().includes(q)) ||
-                                (p.id && p.id.toLowerCase().includes(q))
+                                <tr key={p.id} className={`border-b border-[#ecedee] hover:bg-neutral-50 transition-colors ${isSelected ? 'bg-[#f4f6ff]' : ''}`}>
+                                  <td className="p-3 text-center">
+                                    <input
+                                      type="checkbox"
+                                      className="w-4 h-4 cursor-pointer accent-[#000aff]"
+                                      checked={isSelected}
+                                      onChange={() => handleToggleSelectProduct(p.id)}
+                                    />
+                                  </td>
+                                  <td className="p-3">
+                                    <div className="flex items-center gap-2.5">
+                                      {p.image_url ? (
+                                        <img src={p.image_url} alt="" className="w-8 h-8 rounded object-cover border border-[#ecedee] shrink-0 bg-white" />
+                                      ) : (
+                                        <div className="w-8 h-8 rounded bg-[#ecedee] flex items-center justify-center text-[10px] text-[#737780] shrink-0">
+                                          Sin foto
+                                        </div>
+                                      )}
+                                      <div>
+                                        <span className="font-bold text-[#111111] block leading-tight">{p.name}</span>
+                                        <span className="text-[10px] text-[#737780]">{p.id}</span>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="p-3">{p.brand}</td>
+                                  <td className="p-3">
+                                    {hasNotes ? (
+                                      <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800 flex items-center gap-1 w-max">
+                                        <CheckCircle2 className="w-3 h-3" />
+                                        <span className="truncate max-w-[140px]" title={p.olfactory_family}>{p.olfactory_family}</span>
+                                      </span>
+                                    ) : (
+                                      <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 text-amber-800 flex items-center gap-1 w-max">
+                                        <span>Pendiente IA</span>
+                                      </span>
+                                    )}
+                                  </td>
+                                  <td className="p-3">
+                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                                      is11 ? 'bg-[#000aff] text-white' : 'bg-neutral-200 text-neutral-800'
+                                    }`}>
+                                      {p.category}
+                                    </span>
+                                  </td>
+                                  <td className="p-3 text-center">
+                                    <button
+                                      onClick={() => handleToggle11(p)}
+                                      className={`px-3 py-1 rounded-[6px] text-[11px] font-semibold transition-all cursor-pointer ${
+                                        is11
+                                          ? 'bg-red-50 text-red-700 hover:bg-red-100 border border-red-200'
+                                          : 'bg-[#e5e7ff] text-[#000aff] hover:bg-[#000aff] hover:text-white border border-[#000aff]/30'
+                                      }`}
+                                    >
+                                      {is11 ? 'Quitar de 1.1' : '+ Asignar a 1.1'}
+                                    </button>
+                                  </td>
+                                  <td className="p-3 text-right">
+                                    <div className="flex items-center justify-end gap-1.5">
+                                      <button
+                                        onClick={() => handleEnrichSingle(p)}
+                                        disabled={isEnrichingThis || isAiRunning}
+                                        className="px-2 py-1 rounded bg-[#e5e7ff] text-[#000aff] hover:bg-[#000aff] hover:text-white text-[11px] font-semibold flex items-center gap-1 cursor-pointer transition-colors disabled:opacity-50"
+                                        title="Generar notas y ficha técnica con Gemini IA"
+                                      >
+                                        {isEnrichingThis ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Bot className="w-3 h-3" />}
+                                        <span>IA</span>
+                                      </button>
+                                      <button
+                                        onClick={() => handleOpenEditProduct(p)}
+                                        className="p-1.5 rounded hover:bg-neutral-200 text-[#111111] cursor-pointer"
+                                        title="Editar datos"
+                                      >
+                                        <Edit className="w-3.5 h-3.5" />
+                                      </button>
+                                      <button
+                                        onClick={() => handleDeleteProduct(p.id)}
+                                        className="p-1.5 rounded hover:bg-red-100 text-red-600 cursor-pointer"
+                                        title="Eliminar del catálogo"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
                               );
-                            }
-                            return true;
-                          })
-                          .slice(0, 100)
-                          .map((p) => {
-                            const is11 = p.category === 'Perfumería 1.1';
-                            return (
-                              <tr key={p.id} className="border-b border-[#ecedee] hover:bg-neutral-50 transition-colors">
-                                <td className="p-3 text-[#737780]">{p.id}</td>
-                                <td className="p-3 font-bold text-[#111111]">{p.name}</td>
-                                <td className="p-3">{p.brand}</td>
-                                <td className="p-3">
-                                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
-                                    is11 ? 'bg-[#000aff] text-white' : 'bg-neutral-200 text-neutral-800'
-                                  }`}>
-                                    {p.category}
-                                  </span>
-                                </td>
-                                <td className="p-3 text-center">
-                                  <button
-                                    onClick={() => handleToggle11(p)}
-                                    className={`px-3 py-1 rounded-[6px] text-[11px] font-semibold transition-all cursor-pointer ${
-                                      is11
-                                        ? 'bg-red-50 text-red-700 hover:bg-red-100 border border-red-200'
-                                        : 'bg-[#e5e7ff] text-[#000aff] hover:bg-[#000aff] hover:text-white border border-[#000aff]/30'
-                                    }`}
-                                  >
-                                    {is11 ? 'Quitar de 1.1' : '+ Asignar a 1.1'}
-                                  </button>
-                                </td>
-                                <td className="p-3 text-right space-x-2">
-                                  <button
-                                    onClick={() => handleOpenEditProduct(p)}
-                                    className="p-1.5 rounded hover:bg-neutral-200 text-[#111111] cursor-pointer"
-                                    title="Editar datos"
-                                  >
-                                    <Edit className="w-3.5 h-3.5" />
-                                  </button>
-                                  <button
-                                    onClick={() => handleDeleteProduct(p.id)}
-                                    className="p-1.5 rounded hover:bg-red-100 text-red-600 cursor-pointer"
-                                    title="Eliminar del catálogo"
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  </button>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                      </tbody>
-                    </table>
+                            })}
+                          </tbody>
+                        </table>
+                      );
+                    })()}
                   </div>
                 </div>
               )}
@@ -1006,228 +1189,193 @@ export default function AdminPanel({ isOpen, onClose, onRefreshCatalog }) {
                 </div>
               )}
 
-              {/* TAB 3: GOOGLE SHEETS */}
-              {activeTab === 'sheets' && (
+              {/* TAB 3: GEMINI IA & SCRAPING */}
+              {activeTab === 'gemini' && (
                 <div className="space-y-6">
                   <div>
-                    <h3 className="text-2xl font-bold text-[#111111] tracking-tight">
-                      Configuración del Catálogo y Sincronización
+                    <h3 className="text-2xl font-bold text-[#111111] tracking-tight flex items-center gap-2">
+                      <Bot className="w-6 h-6 text-[#000aff]" />
+                      <span>Automatización & Scraping con Gemini IA</span>
                     </h3>
                     <p className="text-[13px] text-[#737780]">
-                      Módulo preparado para conectar Google Sheets. Actualmente el sitio opera 100% sobre la base de datos interna autónoma.
+                      Extracción autónoma de notas olfativas de salida, corazón y fondo, acordes aromáticos, descripciones de lujo e imágenes de catálogo directamente a Neon Postgres.
                     </p>
                   </div>
 
-                  {/* Status Banner */}
-                  <div className="p-4 rounded-[10px] border border-[#ecedee] flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#ecedee]/50">
-                    <div>
-                      <span className="text-[11px] font-mono text-[#737780] block">Estado de Conexión:</span>
-                      <span className="text-lg font-bold text-[#111111]">
-                        {sheetsConfig?.connection_status || 'Sin configurar'}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={handleTestSheet}
-                        disabled={isTestingSheet || !sheetUrlInput}
-                        className="px-4 py-2 rounded-[8px] bg-white border border-[#d7d7d7] hover:bg-[#ecedee] text-[#111111] text-[13px] font-medium flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-                      >
-                        {isTestingSheet ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Eye className="w-3.5 h-3.5" />}
-                        <span>Probar Conexión & Vista Previa</span>
-                      </button>
-
-                      <button
-                        onClick={handleTriggerSync}
-                        disabled={isSyncingSheet || !sheetUrlInput}
-                        className="px-4 py-2 rounded-[8px] bg-[#000aff] hover:bg-[#0008cc] text-white text-[13px] font-medium flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-                      >
-                        {isSyncingSheet ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
-                        <span>Sincronizar Ahora</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Connection Settings Form */}
-                  <div className="p-6 rounded-[10px] border border-[#ecedee] space-y-4">
-                    <h4 className="text-base font-bold text-[#111111]">Conexión con Google Sheets</h4>
-
-                    <div className="space-y-3">
-                      <div>
-                        <label className="text-[12px] font-mono text-[#111111] font-semibold block mb-1">
-                          Enlace del Documento de Google Sheets:
-                        </label>
-                        <input
-                          type="url"
-                          value={sheetUrlInput}
-                          onChange={(e) => setSheetUrlInput(e.target.value)}
-                          placeholder="https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit"
-                          className="w-full px-3.5 py-2.5 bg-[#ecedee] rounded-[8px] text-[13px] font-mono focus:outline-none focus:ring-1 focus:ring-[#000aff]"
-                        />
-                        <span className="text-[11px] text-[#737780] block pt-1">
-                          Pega la URL completa de tu hoja de cálculo de Google.
+                  {/* Barra de Progreso en Vivo cuando la IA está ejecutándose */}
+                  {isAiRunning && (
+                    <div className="p-5 rounded-[12px] bg-[#111111] text-white space-y-3 shadow-lg animate-fadeIn border border-[#000aff]/50">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                          <RefreshCw className="w-5 h-5 text-[#000aff] animate-spin" />
+                          <span className="font-bold text-[14px]">Scraping y Enriquecimiento con IA en curso</span>
+                        </div>
+                        <span className="text-[12px] font-mono px-2.5 py-0.5 rounded-full bg-[#000aff] text-white font-bold">
+                          {Math.round((aiProgress.current / (aiProgress.total || 1)) * 100)}%
                         </span>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <label className="text-[12px] font-mono text-[#111111] font-semibold block mb-1">
-                            Nombre de la Pestaña:
-                          </label>
-                          <input
-                            type="text"
-                            value={sheetTabInput}
-                            onChange={(e) => setSheetTabInput(e.target.value)}
-                            placeholder="Hoja 1"
-                            className="w-full px-3 py-2 bg-[#ecedee] rounded-[8px] text-[13px] font-mono"
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between text-[12px] text-neutral-300 font-mono">
+                          <span className="truncate max-w-[280px] sm:max-w-md">{aiProgress.currentName || 'Consultando base olfativa...'}</span>
+                          <span>{aiProgress.current} de {aiProgress.total}</span>
+                        </div>
+                        {/* Progress Bar Track */}
+                        <div className="w-full bg-neutral-800 rounded-full h-2.5 overflow-hidden">
+                          <div 
+                            className="bg-gradient-to-r from-[#000aff] to-indigo-400 h-2.5 rounded-full transition-all duration-300"
+                            style={{ width: `${Math.round((aiProgress.current / (aiProgress.total || 1)) * 100)}%` }}
                           />
                         </div>
+                      </div>
 
-                        <div>
-                          <label className="text-[12px] font-mono text-[#111111] font-semibold block mb-1">
-                            Modo de Acceso:
-                          </label>
-                          <select className="w-full px-3 py-2 bg-[#ecedee] rounded-[8px] text-[13px] font-mono">
-                            <option value="csv_or_public">Enlace Compartido / Export CSV Seguro</option>
-                            <option value="apps_script">Google Apps Script Webhook</option>
-                            <option value="service_account">Google Service Account (Backend)</option>
-                          </select>
+                      <p className="text-[11px] text-neutral-400 italic">
+                        {aiProgress.status} • Los cambios se sincronizan en Neon Postgres en tiempo real.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Opciones de Enriquecimiento: Masivo vs Granular */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    {/* Opción 1: Enriquecer Todo el Catálogo Una Sola Vez */}
+                    <div className="p-6 rounded-[12px] border border-[#ecedee] bg-white space-y-4 shadow-sm flex flex-col justify-between">
+                      <div className="space-y-2">
+                        <div className="w-10 h-10 rounded-full bg-[#e5e7ff] text-[#000aff] flex items-center justify-center">
+                          <Sparkles className="w-5 h-5" />
+                        </div>
+                        <h4 className="text-lg font-bold text-[#111111]">1. Enriquecer Todo el Catálogo (Scrapeo Único)</h4>
+                        <p className="text-[13px] text-[#444955] leading-relaxed">
+                          Escanea todos los perfumes del catálogo que aún no tengan notas olfativas completas. Gemini IA investiga y guarda las notas de salida, corazón, fondo y acordes directamente en la base de datos de producción.
+                        </p>
+
+                        <div className="pt-2 grid grid-cols-3 gap-2 text-center text-mono">
+                          <div className="p-2.5 bg-[#ecedee] rounded-[8px]">
+                            <span className="text-[10px] text-[#737780] block">Catálogo</span>
+                            <span className="text-base font-bold text-[#111111]">{adminProducts.length}</span>
+                          </div>
+                          <div className="p-2.5 bg-emerald-50 rounded-[8px] border border-emerald-100">
+                            <span className="text-[10px] text-emerald-800 block">Con Notas</span>
+                            <span className="text-base font-bold text-emerald-800">
+                              {adminProducts.filter(p => p.olfactory_family && p.olfactory_family.length >= 5).length}
+                            </span>
+                          </div>
+                          <div className="p-2.5 bg-amber-50 rounded-[8px] border border-amber-100">
+                            <span className="text-[10px] text-amber-800 block">Pendientes</span>
+                            <span className="text-base font-bold text-amber-800">
+                              {adminProducts.filter(p => !p.olfactory_family || p.olfactory_family.length < 5).length}
+                            </span>
+                          </div>
                         </div>
                       </div>
 
-                      {/* Column mapping preview */}
-                      <div className="p-3 bg-[#ecedee]/60 rounded-[8px] space-y-2">
-                        <span className="text-[11px] font-mono font-bold text-[#111111] block">
-                          Mapeo Predeterminado de Encabezados (Compatible con PRESENTACION 2026.pdf):
-                        </span>
-                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-[11px] font-mono text-[#444955]">
-                          <div>Nombre: <strong>INSPIRACION (M)</strong></div>
-                          <div>Casa: <strong>CASA</strong></div>
-                          <div>Descripción: <strong>DESCRIPCION</strong></div>
-                          <div>Categoría: <strong>CATEGORIA</strong></div>
-                          <div>Subcat: <strong>SUBCATEGORIA</strong></div>
+                      <button
+                        onClick={handleProcessAllCatalogAi}
+                        disabled={isAiRunning}
+                        className="w-full py-3 rounded-[10px] bg-[#111111] hover:bg-[#222222] text-white text-[13px] font-semibold flex items-center justify-center gap-2 cursor-pointer transition-all disabled:opacity-50 shadow-sm"
+                      >
+                        {isAiRunning ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Bot className="w-4 h-4" />}
+                        <span>{isAiRunning ? 'Procesando...' : '🚀 Enriquecer Todo el Catálogo Pendiente'}</span>
+                      </button>
+                    </div>
+
+                    {/* Opción 2: Enriquecimiento Granular / Selectivo para nuevos perfumes */}
+                    <div className="p-6 rounded-[12px] border border-[#ecedee] bg-white space-y-4 shadow-sm flex flex-col justify-between">
+                      <div className="space-y-2">
+                        <div className="w-10 h-10 rounded-full bg-[#000aff]/10 text-[#000aff] flex items-center justify-center">
+                          <CheckSquare className="w-5 h-5" />
+                        </div>
+                        <h4 className="text-lg font-bold text-[#111111]">2. Enriquecimiento Granular (Perfumes Nuevos)</h4>
+                        <p className="text-[13px] text-[#444955] leading-relaxed">
+                          ¿Agregaste uno o varios perfumes nuevos? <strong>No necesitas re-escanear todo el catálogo.</strong> Ve a la pestaña <em>Catálogo & 1.1</em>, marca las casillas de los perfumes que desees enriquecer y pulsa el botón de procesar selección.
+                        </p>
+
+                        <div className="p-3 rounded-[8px] bg-[#ecedee]/60 text-[12px] text-[#444955] space-y-1">
+                          <p>
+                            <strong>Estado actual:</strong> {selectedProdIds.length > 0 
+                              ? <span className="text-[#000aff] font-bold">{selectedProdIds.length} perfume(s) seleccionado(s) listos</span>
+                              : <span className="text-[#737780]">0 perfumes seleccionados en la tabla</span>}
+                          </p>
+                          <p className="text-[11px] text-[#737780]">
+                            También puedes enriquecer un perfume individual pulsando el botón <strong>IA</strong> en su fila.
+                          </p>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-3 pt-2">
-                        <button
-                          type="button"
-                          onClick={handleSaveSheetConfig}
-                          className="px-5 py-2 rounded-[8px] bg-[#111111] text-white text-[13px] font-medium cursor-pointer"
-                        >
-                          Guardar Enlace
-                        </button>
-                        {sheetsConfig?.sheet_url && (
+                      <div className="space-y-2">
+                        {selectedProdIds.length > 0 ? (
                           <button
-                            type="button"
-                            onClick={handleDisconnectSheet}
-                            className="px-4 py-2 rounded-[8px] border border-red-200 text-red-600 hover:bg-red-50 text-[13px] cursor-pointer"
+                            onClick={handleProcessSelectedAi}
+                            disabled={isAiRunning}
+                            className="w-full py-3 rounded-[10px] bg-[#000aff] hover:bg-[#0008cc] text-white text-[13px] font-semibold flex items-center justify-center gap-2 cursor-pointer transition-all disabled:opacity-50 shadow-md"
                           >
-                            Eliminar Conexión
+                            <Zap className="w-4 h-4" />
+                            <span>Procesar {selectedProdIds.length} Seleccionados con IA</span>
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => setActiveTab('products')}
+                            className="w-full py-3 rounded-[10px] bg-white border border-[#d7d7d7] hover:bg-neutral-50 text-[#111111] text-[13px] font-semibold flex items-center justify-center gap-2 cursor-pointer transition-all"
+                          >
+                            <CheckSquare className="w-4 h-4 text-[#000aff]" />
+                            <span>Ir a Seleccionar Perfumes en el Catálogo</span>
                           </button>
                         )}
                       </div>
                     </div>
                   </div>
 
-                  {/* Preview Section */}
-                  {sheetTestResult && (
-                    <div className="p-5 rounded-[10px] border border-[#ecedee] space-y-3">
-                      <div className="flex items-center gap-2">
-                        {sheetTestResult.success ? (
-                          <CheckCircle2 className="w-5 h-5 text-green-600" />
-                        ) : (
-                          <AlertTriangle className="w-5 h-5 text-amber-600" />
-                        )}
-                        <h4 className="text-base font-bold text-[#111111]">
-                          Resultado de Validación de Conexión
-                        </h4>
-                      </div>
-
-                      <p className="text-[13px] text-[#444955]">
-                        {sheetTestResult.message || sheetTestResult.error}
-                      </p>
-
-                      {sheetTestResult.headers && (
-                        <div className="overflow-x-auto pt-2">
-                          <p className="text-[11px] font-mono text-[#737780] mb-1">Columnas detectadas en la hoja:</p>
-                          <div className="flex flex-wrap gap-1.5 pb-3">
-                            {sheetTestResult.headers.map((h, i) => (
-                              <span key={i} className="px-2 py-0.5 rounded bg-[#ecedee] text-[#111] text-[11px] font-mono font-medium">
-                                {h}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {sheetTestResult.preview_rows && sheetTestResult.preview_rows.length > 0 && (
-                        <div className="overflow-x-auto border border-[#ecedee] rounded-[8px]">
-                          <table className="w-full text-left text-[11px] font-mono">
-                            <thead className="bg-[#ecedee]">
-                              <tr>
-                                {sheetTestResult.headers.map((h, i) => (
-                                  <th key={i} className="p-2 border-b border-[#d7d7d7] font-semibold text-[#111111]">{h}</th>
-                                ))}
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {sheetTestResult.preview_rows.map((row, rIdx) => (
-                                <tr key={rIdx} className="border-b border-[#ecedee] hover:bg-neutral-50">
-                                  {row.map((cell, cIdx) => (
-                                    <td key={cIdx} className="p-2">{cell}</td>
-                                  ))}
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
+                  {/* Registro de Actividad IA en Tiempo Real */}
+                  <div className="p-5 rounded-[12px] border border-[#ecedee] bg-white space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-base font-bold text-[#111111] flex items-center gap-2">
+                        <Bot className="w-4 h-4 text-[#000aff]" />
+                        <span>Registro de Operaciones de Gemini IA</span>
+                      </h4>
+                      {aiLogs.length > 0 && (
+                        <button
+                          onClick={() => setAiLogs([])}
+                          className="text-[11px] text-[#737780] hover:text-[#111111] font-mono cursor-pointer"
+                        >
+                          Limpiar registro
+                        </button>
                       )}
                     </div>
-                  )}
 
-                  {/* Sync result notification */}
-                  {sheetSyncResult && (
-                    <div className="p-4 rounded-[10px] bg-green-50 border border-green-200 text-green-900 text-[13px] space-y-1">
-                      <p className="font-bold">{sheetSyncResult.message}</p>
-                      {sheetSyncResult.summary && (
-                        <p className="text-[12px] font-mono">
-                          Detectados: {sheetSyncResult.summary.total_detected} | 
-                          Agregados: {sheetSyncResult.summary.items_added} | 
-                          Actualizados: {sheetSyncResult.summary.items_updated} | 
-                          Omitidos por cambios manuales: {sheetSyncResult.summary.items_skipped}
+                    {aiLogs.length === 0 ? (
+                      <div className="p-6 text-center text-[#737780] text-[13px] bg-[#ecedee]/40 rounded-[8px]">
+                        <p>No hay ejecuciones recientes en esta sesión.</p>
+                        <p className="text-[11px] pt-1">
+                          Inicia el enriquecimiento masivo o procesa perfumes seleccionados para ver el reporte olfativo en tiempo real.
                         </p>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Sync History Table */}
-                  <div className="space-y-3">
-                    <h4 className="text-base font-bold text-[#111111]">Historial de Sincronizaciones</h4>
-                    {syncHistoryList.length === 0 ? (
-                      <p className="text-[13px] text-[#737780] italic">No hay sincronizaciones previas registradas.</p>
+                      </div>
                     ) : (
-                      <div className="border border-[#ecedee] rounded-[10px] overflow-hidden">
-                        <table className="w-full text-left text-[12px] font-mono">
-                          <thead className="bg-[#ecedee]">
+                      <div className="border border-[#ecedee] rounded-[8px] max-h-60 overflow-y-auto font-mono text-[11px]">
+                        <table className="w-full text-left">
+                          <thead className="bg-[#ecedee] sticky top-0">
                             <tr>
-                              <th className="p-3">Fecha y Hora</th>
-                              <th className="p-3">Estado</th>
-                              <th className="p-3">Detectados</th>
-                              <th className="p-3">Agregados</th>
-                              <th className="p-3">Omitidos</th>
-                              <th className="p-3">Detalle</th>
+                              <th className="p-2.5">Hora</th>
+                              <th className="p-2.5">Perfume</th>
+                              <th className="p-2.5">Estado</th>
+                              <th className="p-2.5">Familia Olfativa / Detalle</th>
                             </tr>
                           </thead>
                           <tbody>
-                            {syncHistoryList.map((h) => (
-                              <tr key={h.id} className="border-b border-[#ecedee] hover:bg-neutral-50">
-                                <td className="p-3">{h.synced_at}</td>
-                                <td className="p-3 font-semibold">{h.status}</td>
-                                <td className="p-3">{h.items_detected}</td>
-                                <td className="p-3 text-green-700 font-bold">+{h.items_added}</td>
-                                <td className="p-3 text-[#737780]">{h.items_skipped}</td>
-                                <td className="p-3 text-[11px] text-[#444955] truncate max-w-xs">{h.log_details}</td>
+                            {aiLogs.map((log, idx) => (
+                              <tr key={idx} className="border-b border-[#ecedee] hover:bg-neutral-50">
+                                <td className="p-2 text-[#737780]">{log.time}</td>
+                                <td className="p-2 font-bold text-[#111111]">{log.name}</td>
+                                <td className="p-2">
+                                  {log.status === 'success' ? (
+                                    <span className="px-2 py-0.5 rounded-full text-[10px] bg-green-100 text-green-800 font-bold">
+                                      Guardado
+                                    </span>
+                                  ) : (
+                                    <span className="px-2 py-0.5 rounded-full text-[10px] bg-red-100 text-red-800 font-bold">
+                                      Error
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="p-2 text-[#444955] truncate max-w-xs">{log.details}</td>
                               </tr>
                             ))}
                           </tbody>

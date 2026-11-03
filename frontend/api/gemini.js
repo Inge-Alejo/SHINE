@@ -9,7 +9,7 @@ export default async function handler(req, res) {
 
   const admin = verifyAuth(req);
   if (!admin) {
-    return res.status(401).json({ success: false, error: 'No autorizado' });
+    return res.status(401).json({ success: false, error: 'No autorizado. Se requiere sesión de administrador.' });
   }
 
   if (req.method !== 'POST') {
@@ -30,14 +30,14 @@ export default async function handler(req, res) {
   try {
     const ai = new GoogleGenAI({ apiKey });
 
-    // Acción 1: Enriquecer notas olfativas y descripción de un perfume
+    // Acción 1: Enriquecer un solo perfume
     if (action === 'enrich') {
-      const { perfume_name, brand, product_id } = input;
+      const { perfume_name, brand, product_id, custom_image_url } = input;
       if (!perfume_name) {
         return res.status(400).json({ success: false, error: 'perfume_name requerido' });
       }
 
-      const prompt = `Actúa como un maestro perfumista internacional.
+      const prompt = `Actúa como un maestro perfumista internacional y redactor editorial de fragancias de lujo.
 Proporciona la ficha técnica oficial del perfume: "${perfume_name}" de la casa "${brand || ''}".
 Responde ÚNICAMENTE en formato JSON con la siguiente estructura exacta:
 {
@@ -62,11 +62,27 @@ Responde ÚNICAMENTE en formato JSON con la siguiente estructura exacta:
 
       // Si se envió product_id, actualizar la base de datos automáticamente
       if (product_id) {
+        let updateSql = `
+          UPDATE products 
+          SET olfactory_family = ?, gender = ?, description = ?, updated_at = CURRENT_TIMESTAMP
+        `;
+        const params = [parsed.olfactory_family, parsed.gender, parsed.description];
+
+        if (custom_image_url) {
+          updateSql += `, image_url = ?`;
+          params.push(custom_image_url);
+        }
+
+        updateSql += ` WHERE id = ?`;
+        params.push(product_id);
+
+        await execute(updateSql, params);
+
+        // Guardar en bitácora de auditoría
         await execute(
-          `UPDATE products 
-           SET olfactory_family = ?, gender = ?, description = ?, updated_at = CURRENT_TIMESTAMP
-           WHERE id = ?`,
-          [parsed.olfactory_family, parsed.gender, parsed.description, product_id]
+          `INSERT INTO audit_log (entity_type, entity_id, action, user_name, details)
+           VALUES ('product', ?, 'gemini_enrich', 'admin', ?)`,
+          [product_id, `Notas agregadas: ${parsed.olfactory_family} | Salida: ${parsed.top_notes}`]
         );
       }
 
@@ -77,14 +93,67 @@ Responde ÚNICAMENTE en formato JSON con la siguiente estructura exacta:
       });
     }
 
-    // Acción 2: Búsqueda del frasco y características visuales para recorte sin fondo
+    // Acción 2: Enriquecimiento en Lote (Batch)
+    if (action === 'batch_enrich') {
+      const items = input.items || [];
+      if (!Array.isArray(items) || items.length === 0) {
+        return res.status(400).json({ success: false, error: 'Lista de items vacía' });
+      }
+
+      // Procesar lote con límite de seguridad
+      const maxBatch = Math.min(items.length, 10);
+      const results = [];
+
+      for (let i = 0; i < maxBatch; i++) {
+        const item = items[i];
+        try {
+          const prompt = `Ficha técnica concisa para perfume "${item.name}" de "${item.brand || ''}".
+JSON estricto:
+{
+  "olfactory_family": "Familia",
+  "gender": "Masculino, Femenino o Unisex",
+  "description": "Descripción elegante de 2 frases en español.",
+  "top_notes": "Notas salida",
+  "heart_notes": "Notas corazón",
+  "base_notes": "Notas fondo"
+}`;
+
+          const resp = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: { responseMimeType: 'application/json' }
+          });
+
+          const pData = JSON.parse(resp.text.trim());
+
+          await execute(
+            `UPDATE products 
+             SET olfactory_family = ?, gender = ?, description = ?, updated_at = CURRENT_TIMESTAMP
+             WHERE id = ?`,
+            [pData.olfactory_family, pData.gender, pData.description, item.id]
+          );
+
+          results.push({ id: item.id, name: item.name, success: true, data: pData });
+        } catch (itemErr) {
+          results.push({ id: item.id, name: item.name, success: false, error: itemErr.message });
+        }
+      }
+
+      return res.status(200).json({
+        success: true,
+        processed: results.length,
+        results
+      });
+    }
+
+    // Acción 3: Búsqueda del frasco y características visuales para recorte sin fondo
     if (action === 'bottle_reference') {
       const { perfume_name, brand } = input;
       const prompt = `Investiga la fotografía oficial de producto del perfume: "${perfume_name}" de la marca "${brand || ''}".
 Indica:
-1. El enlace oficial o nombre exacto con el que se cataloga internacionalmente.
+1. El término de búsqueda exacto en inglés y español para encontrar la imagen en alta definición.
 2. Características del frasco: color exacto del líquido, color de la botella, tapón y acabado.
-3. Recomendaciones para recortar el fondo a transparente (canal alfa) respetando la silueta del frasco.
+3. Recomendaciones para recortar el fondo a transparente (canal alfa PNG) respetando la silueta del frasco.
 Responde en JSON:
 {
   "query_reference": "Nombre exacto de búsqueda",
@@ -113,4 +182,3 @@ Responde en JSON:
     return res.status(500).json({ success: false, error: error.message });
   }
 }
-

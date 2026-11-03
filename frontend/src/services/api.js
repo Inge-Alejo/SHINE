@@ -316,6 +316,18 @@ export async function enrichWithGemini(token, payload) {
   return res.json();
 }
 
+export async function batchEnrichWithGemini(token, items) {
+  const res = await fetch(`${API_BASE}/gemini?action=batch_enrich`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({ items })
+  });
+  return res.json();
+}
+
 export async function getGeminiBottleReference(token, payload) {
   const res = await fetch(`${API_BASE}/gemini?action=bottle_reference`, {
     method: 'POST',

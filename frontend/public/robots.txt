@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /backend/
+Disallow: /admin
+
+Sitemap: https://shinefragancias.com/sitemap.xml
+

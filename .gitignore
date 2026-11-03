@@ -1,0 +1,32 @@
+# Dependencias
+node_modules/
+frontend/node_modules/
+package-lock.json.backup
+
+# Variables de entorno y secretos
+.env
+.env.local
+.env.*.local
+*.env
+backend/.env
+
+# Build outputs
+frontend/dist/
+dist/
+.vercel/
+
+# Archivos pesados o innecesarios para el repositorio
+shine.rar
+COTIZACION PORTATILES FUNDACION UDEA.pdf
+*.log
+npm-debug.log*
+
+# Base de datos local SQLite (la producción corre en Postgres / Neon)
+backend/data/*.db
+backend/data/*.sqlite
+
+# Sistema operativo y editores
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

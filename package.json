@@ -1,0 +1,21 @@
+{
+  "name": "shine-fragancias",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "SHINE Fragancias - Plataforma Web Editorial y Catálogo Administrable",
+  "scripts": {
+    "build": "cd frontend && npm install && npm run build",
+    "dev": "node server.mjs",
+    "init-db": "node scripts/init_vercel_postgres.mjs",
+    "gemini:sync": "node scripts/sync_gemini_images.mjs"
+  },
+  "dependencies": {
+    "@google/genai": "^2.32.0",
+    "@vercel/postgres": "^0.10.0",
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^16.4.7",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.13.1"
+  }
+}

@@ -1,0 +1,225 @@
+import React, { useState } from 'react';
+import { X, ShoppingBag, MessageCircle, Check, Sparkles, ShieldCheck } from 'lucide-react';
+import { useCart } from '../context/CartContext';
+
+export default function ProductDetailModal({ product, onClose }) {
+  const { addToCart, getPriceForPresentation, getWhatsAppIndividualOrderUrl, getWhatsAppAvailabilityUrl } = useCart();
+
+  const isInspiracion = product?.category === 'Inspiraciones';
+  const isOriginal = product?.category === 'Originales';
+  const is11 = product?.category === 'Perfumería 1.1';
+
+  // Presentación por defecto para Inspiraciones (60 ml es la más popular)
+  const [selectedPresentation, setSelectedPresentation] = useState('60 ml');
+  const [quantity, setQuantity] = useState(1);
+  const [addedAnimation, setAddedAnimation] = useState(false);
+
+  if (!product) return null;
+
+  const currentPrice = isInspiracion ? getPriceForPresentation(selectedPresentation) : 0;
+  const currentSubtotal = currentPrice * quantity;
+
+  const handleAddToCart = () => {
+    const success = addToCart(product, selectedPresentation, quantity);
+    if (success) {
+      setAddedAnimation(true);
+      setTimeout(() => {
+        setAddedAnimation(false);
+        onClose();
+      }, 500);
+    }
+  };
+
+  const handleIndividualWhatsAppOrder = () => {
+    const url = getWhatsAppIndividualOrderUrl(product, selectedPresentation, quantity);
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
+      <div 
+        className="bg-white rounded-[14.4px] max-w-2xl w-full overflow-hidden shadow-2xl border border-[#ecedee] flex flex-col md:flex-row relative animate-scaleUp"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Close Button */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full bg-[#ecedee] hover:bg-[#d7d7d7] text-[#111111] flex items-center justify-center transition-colors cursor-pointer"
+        >
+          <X className="w-4 h-4" />
+        </button>
+
+        {/* Left: Product Image & Badges */}
+        <div className="md:w-1/2 bg-[#ecedee] p-8 flex flex-col items-center justify-center relative">
+          <div className="absolute top-4 left-4">
+            <span className={`text-[11px] font-mono px-3 py-1 rounded-full font-semibold ${
+              isInspiracion 
+                ? 'bg-[#000aff] text-white' 
+                : isOriginal 
+                  ? 'bg-[#111111] text-white' 
+                  : 'bg-[#444955] text-white'
+            }`}>
+              {product.category}
+            </span>
+          </div>
+
+          <div className="w-full aspect-square flex items-center justify-center">
+            <img
+              src={product.image_url || './uploads/system/presentaciones_shine.jpg'}
+              alt={product.name}
+              className="max-h-[85%] max-w-[85%] object-contain mix-blend-multiply transition-transform duration-500 hover:scale-105"
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = './uploads/system/presentaciones_shine.jpg';
+              }}
+            />
+          </div>
+
+          <div className="text-center pt-2">
+            <span className="text-[11px] font-mono text-[#737780]">
+              {product.image_url ? 'Fotografía Verificada' : 'Presentación SHINE Fragancias'}
+            </span>
+          </div>
+        </div>
+
+        {/* Right: Details & Actions */}
+        <div className="md:w-1/2 p-6 sm:p-8 flex flex-col justify-between space-y-6">
+          <div className="space-y-4">
+            {/* Title & Brand */}
+            <div>
+              <span className="text-[12px] font-mono text-[#000aff] font-semibold uppercase tracking-wider block">
+                {product.brand}
+              </span>
+              <h3 className="text-2xl font-bold text-[#111111] tracking-tight">
+                {product.name}
+              </h3>
+              <p className="text-[12px] font-mono text-[#737780] pt-0.5">
+                Género: {product.gender || 'Unisex'} {product.subcategory ? `• ${product.subcategory}` : ''}
+              </p>
+            </div>
+
+            {/* Description / Olfactory notes */}
+            <div className="bg-[#ecedee]/60 rounded-[10px] p-3 text-[13px] text-[#444955] space-y-1">
+              <p className="font-semibold text-[#111111]">Familia y Notas Olfativas:</p>
+              <p className="text-[12px] leading-relaxed">
+                {product.description || product.olfactory_family || 'Acorde aromático balanceado de alta fijación.'}
+              </p>
+            </div>
+
+            {/* COMMERCIAL LOGIC BASED ON CATEGORY */}
+            {isInspiracion ? (
+              /* INSPIRACIONES: Precios, Selector obligatorio de presentación y cantidad */
+              <div className="space-y-4 pt-2 border-t border-[#ecedee]">
+                <div>
+                  <label className="text-[12px] font-mono text-[#111111] font-semibold block mb-2">
+                    Selecciona Presentación (Obligatoria):
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { size: '30 ml', price: getPriceForPresentation('30ml') },
+                      { size: '60 ml', price: getPriceForPresentation('60ml') },
+                      { size: '100 ml', price: getPriceForPresentation('100ml') }
+                    ].map(pres => (
+                      <button
+                        key={pres.size}
+                        type="button"
+                        onClick={() => setSelectedPresentation(pres.size)}
+                        className={`p-2.5 rounded-[10px] text-center border transition-all cursor-pointer ${
+                          selectedPresentation === pres.size
+                            ? 'border-[#000aff] bg-[#e5e7ff]/40 text-[#111111] font-bold shadow-sm'
+                            : 'border-[#ecedee] bg-white text-[#444955] hover:border-[#a1a4aa]'
+                        }`}
+                      >
+                        <span className="block text-[13px] font-mono">{pres.size}</span>
+                        <span className="block text-[11px] font-mono text-[#000aff] font-semibold">
+                          ${pres.price.toLocaleString('es-CO')}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Quantity selector */}
+                <div className="flex items-center justify-between pt-1">
+                  <span className="text-[12px] font-mono text-[#737780]">Cantidad:</span>
+                  <div className="flex items-center gap-2 border border-[#ecedee] rounded-[8px] p-1 bg-[#ecedee]">
+                    <button
+                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                      className="w-7 h-7 rounded bg-white text-[#111111] font-bold text-sm flex items-center justify-center hover:bg-neutral-100 cursor-pointer"
+                    >
+                      -
+                    </button>
+                    <span className="w-8 text-center font-mono font-bold text-[14px]">
+                      {quantity}
+                    </span>
+                    <button
+                      onClick={() => setQuantity(quantity + 1)}
+                      className="w-7 h-7 rounded bg-white text-[#111111] font-bold text-sm flex items-center justify-center hover:bg-neutral-100 cursor-pointer"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+
+                {/* Subtotal */}
+                <div className="flex items-center justify-between pt-2 border-t border-[#ecedee]">
+                  <span className="text-[12px] font-mono text-[#737780]">Subtotal:</span>
+                  <span className="text-xl font-mono font-bold text-[#111111]">
+                    ${currentSubtotal.toLocaleString('es-CO')} <span className="text-xs text-[#737780]">COP</span>
+                  </span>
+                </div>
+              </div>
+            ) : (
+              /* ORIGINALES & 1.1: Restricción absoluta de precios y ml */
+              <div className="space-y-3 pt-2 border-t border-[#ecedee]">
+                <div className="p-3 bg-[#ecedee] rounded-[10px] space-y-1">
+                  <p className="text-[12px] font-mono text-[#000aff] font-semibold">
+                    Referencia Bajo Encargo Exclusivo
+                  </p>
+                  <p className="text-[12px] text-[#444955] leading-relaxed">
+                    Esta pieza se comercializa por encargo personal y verificación de disponibilidad con distribuidor oficial. No cuenta con disponibilidad inmediata en tienda ni precios estándar de mostrador.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Buttons Area */}
+          <div className="space-y-2 pt-2">
+            {isInspiracion ? (
+              <div className="flex flex-col sm:flex-row gap-2">
+                <button
+                  onClick={handleAddToCart}
+                  className="flex-1 py-3 rounded-[10px] bg-[#111111] hover:bg-[#222222] text-white text-[13px] font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm active:scale-95"
+                >
+                  {addedAnimation ? <Check className="w-4 h-4 text-green-400" /> : <ShoppingBag className="w-4 h-4" />}
+                  <span>{addedAnimation ? '¡Agregado!' : 'Agregar al Carrito'}</span>
+                </button>
+
+                <button
+                  onClick={handleIndividualWhatsAppOrder}
+                  className="py-3 px-4 rounded-[10px] bg-[#25D366] hover:bg-[#1EBE5D] text-white text-[13px] font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm active:scale-95"
+                  title="Comprar directo por WhatsApp"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  <span className="hidden sm:inline">Pedir por WhatsApp</span>
+                </button>
+              </div>
+            ) : (
+              <a
+                href={getWhatsAppAvailabilityUrl(product)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-3.5 rounded-[10px] bg-[#111111] hover:bg-[#222222] text-white text-[14px] font-semibold flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 text-center"
+              >
+                <MessageCircle className="w-4 h-4 text-[#25D366]" />
+                <span>Consultar Disponibilidad por WhatsApp</span>
+              </a>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+

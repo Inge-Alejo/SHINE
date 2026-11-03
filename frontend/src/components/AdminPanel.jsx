@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { 
   X, Lock, ShieldCheck, Database, RefreshCw, Settings, Image as ImageIcon, 
   Plus, Edit, Trash2, CheckCircle2, AlertTriangle, ExternalLink, Sparkles, 
-  Upload, Search, Eye, LogOut, Bot, CheckSquare, Square, Play, Pause, Zap 
+  Upload, Search, Eye, LogOut, Bot, CheckSquare, Square, Play, Pause, Zap,
+  ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { 
   adminLogin, fetchDashboard, updateCommercialSettings, createProduct, 
@@ -57,6 +58,10 @@ export default function AdminPanel({ isOpen, onClose, onRefreshCatalog }) {
     price_100ml: settings.prices?.['100ml'] || 37000
   });
   const [commSuccess, setCommSuccess] = useState('');
+
+  // Paginación y escalabilidad del catálogo
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(50); // 25, 50, 100, 250, 500, 'all'
 
   // Selección múltiple para automatización IA
   const [selectedProdIds, setSelectedProdIds] = useState([]);
@@ -143,7 +148,7 @@ export default function AdminPanel({ isOpen, onClose, onRefreshCatalog }) {
     if (!token) return;
     setIsLoadingProds(true);
     try {
-      const res = await fetchProducts({ limit: 500, status: 'all' });
+      const res = await fetchProducts({ limit: 'all', status: 'all' });
       if (res && res.data) {
         setAdminProducts(res.data);
       }
@@ -852,23 +857,29 @@ export default function AdminPanel({ isOpen, onClose, onRefreshCatalog }) {
                     </div>
                   )}
 
-                  {/* Filtros de Búsqueda y Categoría */}
+                  {/* Filtros de Búsqueda, Categoría y Control de Paginación */}
                   <div className="space-y-3">
-                    <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between">
                       <div className="relative flex-1">
                         <Search className="w-4 h-4 text-[#737780] absolute left-3 top-1/2 -translate-y-1/2" />
                         <input
                           type="text"
-                          placeholder="Buscar por nombre o casa en el catálogo..."
+                          placeholder="Buscar por nombre, casa o notas olfativas..."
                           value={prodSearch}
-                          onChange={(e) => setProdSearch(e.target.value)}
+                          onChange={(e) => {
+                            setProdSearch(e.target.value);
+                            setCurrentPage(1);
+                          }}
                           className="w-full pl-9 pr-4 py-2 bg-[#ecedee] rounded-[8px] text-[13px] focus:outline-none focus:ring-1 focus:ring-[#000aff]"
                         />
                       </div>
 
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <button
-                          onClick={() => setProdCategoryFilter('')}
+                          onClick={() => {
+                            setProdCategoryFilter('');
+                            setCurrentPage(1);
+                          }}
                           className={`px-3 py-1.5 rounded-[8px] text-[12px] font-mono cursor-pointer transition-all ${
                             prodCategoryFilter === '' ? 'bg-[#111111] text-white font-bold' : 'bg-[#ecedee] text-[#444955]'
                           }`}
@@ -877,7 +888,10 @@ export default function AdminPanel({ isOpen, onClose, onRefreshCatalog }) {
                         </button>
 
                         <button
-                          onClick={() => setProdCategoryFilter('Perfumería 1.1')}
+                          onClick={() => {
+                            setProdCategoryFilter('Perfumería 1.1');
+                            setCurrentPage(1);
+                          }}
                           className={`px-3 py-1.5 rounded-[8px] text-[12px] font-mono cursor-pointer transition-all flex items-center gap-1.5 ${
                             prodCategoryFilter === 'Perfumería 1.1' ? 'bg-[#000aff] text-white font-bold shadow-sm' : 'bg-[#ecedee] text-[#000aff]'
                           }`}
@@ -887,13 +901,37 @@ export default function AdminPanel({ isOpen, onClose, onRefreshCatalog }) {
                         </button>
 
                         <button
-                          onClick={() => setProdCategoryFilter('Inspiraciones')}
+                          onClick={() => {
+                            setProdCategoryFilter('Inspiraciones');
+                            setCurrentPage(1);
+                          }}
                           className={`px-3 py-1.5 rounded-[8px] text-[12px] font-mono cursor-pointer transition-all ${
                             prodCategoryFilter === 'Inspiraciones' ? 'bg-[#111111] text-white font-bold' : 'bg-[#ecedee] text-[#444955]'
                           }`}
                         >
                           Inspiraciones ({adminProducts.filter(p => p.category === 'Inspiraciones').length})
                         </button>
+
+                        {/* Selector de volumen por página */}
+                        <div className="flex items-center gap-1 bg-[#ecedee] px-2.5 py-1 rounded-[8px] text-[12px] font-mono">
+                          <span className="text-[#737780]">Ver:</span>
+                          <select
+                            value={itemsPerPage}
+                            onChange={(e) => {
+                              const val = e.target.value === 'all' ? 'all' : parseInt(e.target.value, 10);
+                              setItemsPerPage(val);
+                              setCurrentPage(1);
+                            }}
+                            className="bg-transparent font-bold text-[#111111] cursor-pointer focus:outline-none"
+                          >
+                            <option value={25}>25</option>
+                            <option value={50}>50</option>
+                            <option value={100}>100</option>
+                            <option value={250}>250</option>
+                            <option value={500}>500</option>
+                            <option value="all">Todos ({adminProducts.length})</option>
+                          </select>
+                        </div>
                       </div>
                     </div>
 
@@ -911,7 +949,7 @@ export default function AdminPanel({ isOpen, onClose, onRefreshCatalog }) {
                             className="px-3.5 py-1.5 rounded-[8px] bg-[#000aff] hover:bg-[#0008cc] text-white text-[12px] font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-sm"
                           >
                             <Zap className="w-3.5 h-3.5" />
-                            <span>Procesar seleccionados con IA ({selectedProdIds.length})</span>
+                            <span>Procesar con IA ({selectedProdIds.length})</span>
                           </button>
                           <button
                             onClick={() => setSelectedProdIds([])}
@@ -924,144 +962,242 @@ export default function AdminPanel({ isOpen, onClose, onRefreshCatalog }) {
                     )}
                   </div>
 
-                  {/* Tabla de Productos con Selección para Scraping */}
-                  <div className="border border-[#ecedee] rounded-[10px] overflow-hidden max-h-[60vh] overflow-y-auto">
-                    {(() => {
-                      const filteredList = adminProducts.filter(p => {
-                        if (prodCategoryFilter && p.category !== prodCategoryFilter) return false;
-                        if (prodSearch.trim()) {
-                          const q = prodSearch.toLowerCase().trim();
-                          return (
-                            (p.name && p.name.toLowerCase().includes(q)) ||
-                            (p.brand && p.brand.toLowerCase().includes(q)) ||
-                            (p.id && p.id.toLowerCase().includes(q))
-                          );
-                        }
-                        return true;
-                      });
-                      const displayedList = filteredList.slice(0, 100);
-                      const allCurrentSelected = displayedList.length > 0 && displayedList.every(p => selectedProdIds.includes(p.id));
+                  {/* Tabla de Productos con Paginación y Soporte de Crecimiento Infinito */}
+                  {(() => {
+                    const filteredList = adminProducts.filter(p => {
+                      if (prodCategoryFilter && p.category !== prodCategoryFilter) return false;
+                      if (prodSearch.trim()) {
+                        const q = prodSearch.toLowerCase().trim();
+                        return (
+                          (p.name && p.name.toLowerCase().includes(q)) ||
+                          (p.brand && p.brand.toLowerCase().includes(q)) ||
+                          (p.id && p.id.toLowerCase().includes(q)) ||
+                          (p.olfactory_family && p.olfactory_family.toLowerCase().includes(q))
+                        );
+                      }
+                      return true;
+                    });
 
-                      return (
-                        <table className="w-full text-left text-[12px] font-mono">
-                          <thead className="bg-[#ecedee] sticky top-0 z-10">
-                            <tr>
-                              <th className="p-3 w-10 text-center">
-                                <input
-                                  type="checkbox"
-                                  className="w-4 h-4 cursor-pointer accent-[#000aff]"
-                                  checked={allCurrentSelected}
-                                  onChange={() => handleSelectAllProducts(displayedList)}
-                                  title="Seleccionar / deseleccionar todos los visibles"
-                                />
-                              </th>
-                              <th className="p-3">Perfume</th>
-                              <th className="p-3">Casa</th>
-                              <th className="p-3">Notas Olfativas IA</th>
-                              <th className="p-3">Categoría</th>
-                              <th className="p-3 text-center">Config 1.1</th>
-                              <th className="p-3 text-right">Acciones</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {displayedList.map((p) => {
-                              const is11 = p.category === 'Perfumería 1.1';
-                              const isSelected = selectedProdIds.includes(p.id);
-                              const hasNotes = p.olfactory_family && p.olfactory_family.length > 4;
-                              const isEnrichingThis = singleEnrichingId === p.id;
+                    const totalItems = filteredList.length;
+                    const pageSize = itemsPerPage === 'all' ? totalItems : itemsPerPage;
+                    const totalPages = itemsPerPage === 'all' ? 1 : Math.max(1, Math.ceil(totalItems / pageSize));
+                    const safePage = Math.min(currentPage, totalPages);
+                    const startIndex = itemsPerPage === 'all' ? 0 : (safePage - 1) * pageSize;
+                    const endIndex = itemsPerPage === 'all' ? totalItems : Math.min(startIndex + pageSize, totalItems);
+                    const displayedList = itemsPerPage === 'all' ? filteredList : filteredList.slice(startIndex, endIndex);
+                    const allCurrentSelected = displayedList.length > 0 && displayedList.every(p => selectedProdIds.includes(p.id));
 
-                              return (
-                                <tr key={p.id} className={`border-b border-[#ecedee] hover:bg-neutral-50 transition-colors ${isSelected ? 'bg-[#f4f6ff]' : ''}`}>
-                                  <td className="p-3 text-center">
-                                    <input
-                                      type="checkbox"
-                                      className="w-4 h-4 cursor-pointer accent-[#000aff]"
-                                      checked={isSelected}
-                                      onChange={() => handleToggleSelectProduct(p.id)}
-                                    />
-                                  </td>
-                                  <td className="p-3">
-                                    <div className="flex items-center gap-2.5">
-                                      {p.image_url ? (
-                                        <img src={p.image_url} alt="" className="w-8 h-8 rounded object-cover border border-[#ecedee] shrink-0 bg-white" />
-                                      ) : (
-                                        <div className="w-8 h-8 rounded bg-[#ecedee] flex items-center justify-center text-[10px] text-[#737780] shrink-0">
-                                          Sin foto
-                                        </div>
-                                      )}
-                                      <div>
-                                        <span className="font-bold text-[#111111] block leading-tight">{p.name}</span>
-                                        <span className="text-[10px] text-[#737780]">{p.id}</span>
-                                      </div>
-                                    </div>
-                                  </td>
-                                  <td className="p-3">{p.brand}</td>
-                                  <td className="p-3">
-                                    {hasNotes ? (
-                                      <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800 flex items-center gap-1 w-max">
-                                        <CheckCircle2 className="w-3 h-3" />
-                                        <span className="truncate max-w-[140px]" title={p.olfactory_family}>{p.olfactory_family}</span>
-                                      </span>
-                                    ) : (
-                                      <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 text-amber-800 flex items-center gap-1 w-max">
-                                        <span>Pendiente IA</span>
-                                      </span>
-                                    )}
-                                  </td>
-                                  <td className="p-3">
-                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
-                                      is11 ? 'bg-[#000aff] text-white' : 'bg-neutral-200 text-neutral-800'
-                                    }`}>
-                                      {p.category}
-                                    </span>
-                                  </td>
-                                  <td className="p-3 text-center">
-                                    <button
-                                      onClick={() => handleToggle11(p)}
-                                      className={`px-3 py-1 rounded-[6px] text-[11px] font-semibold transition-all cursor-pointer ${
-                                        is11
-                                          ? 'bg-red-50 text-red-700 hover:bg-red-100 border border-red-200'
-                                          : 'bg-[#e5e7ff] text-[#000aff] hover:bg-[#000aff] hover:text-white border border-[#000aff]/30'
-                                      }`}
-                                    >
-                                      {is11 ? 'Quitar de 1.1' : '+ Asignar a 1.1'}
-                                    </button>
-                                  </td>
-                                  <td className="p-3 text-right">
-                                    <div className="flex items-center justify-end gap-1.5">
-                                      <button
-                                        onClick={() => handleEnrichSingle(p)}
-                                        disabled={isEnrichingThis || isAiRunning}
-                                        className="px-2 py-1 rounded bg-[#e5e7ff] text-[#000aff] hover:bg-[#000aff] hover:text-white text-[11px] font-semibold flex items-center gap-1 cursor-pointer transition-colors disabled:opacity-50"
-                                        title="Generar notas y ficha técnica con Gemini IA"
-                                      >
-                                        {isEnrichingThis ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Bot className="w-3 h-3" />}
-                                        <span>IA</span>
-                                      </button>
-                                      <button
-                                        onClick={() => handleOpenEditProduct(p)}
-                                        className="p-1.5 rounded hover:bg-neutral-200 text-[#111111] cursor-pointer"
-                                        title="Editar datos"
-                                      >
-                                        <Edit className="w-3.5 h-3.5" />
-                                      </button>
-                                      <button
-                                        onClick={() => handleDeleteProduct(p.id)}
-                                        className="p-1.5 rounded hover:bg-red-100 text-red-600 cursor-pointer"
-                                        title="Eliminar del catálogo"
-                                      >
-                                        <Trash2 className="w-3.5 h-3.5" />
-                                      </button>
-                                    </div>
+                    return (
+                      <div className="space-y-3">
+                        {/* Selector rápido para seleccionar todo el catálogo o la página actual */}
+                        <div className="flex flex-wrap items-center justify-between text-[11px] font-mono text-[#737780] px-1">
+                          <div>
+                            Mostrando <strong className="text-[#111111]">{totalItems === 0 ? 0 : startIndex + 1} - {endIndex}</strong> de <strong className="text-[#111111]">{totalItems}</strong> perfumes encontrados (Catálogo total: {adminProducts.length})
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <button
+                              onClick={() => {
+                                const allFilteredIds = filteredList.map(p => p.id);
+                                const allIn = allFilteredIds.every(id => selectedProdIds.includes(id));
+                                if (allIn) {
+                                  setSelectedProdIds(prev => prev.filter(id => !allFilteredIds.includes(id)));
+                                } else {
+                                  setSelectedProdIds(prev => Array.from(new Set([...prev, ...allFilteredIds])));
+                                }
+                              }}
+                              className="text-[#000aff] hover:underline cursor-pointer font-semibold"
+                            >
+                              {filteredList.every(p => selectedProdIds.includes(p.id)) && filteredList.length > 0
+                                ? 'Deseleccionar todos los filtrados'
+                                : `Seleccionar los ${totalItems} filtrados`}
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Contenedor con Scroll de la Tabla */}
+                        <div className="border border-[#ecedee] rounded-[10px] overflow-hidden max-h-[60vh] overflow-y-auto bg-white">
+                          <table className="w-full text-left text-[12px] font-mono">
+                            <thead className="bg-[#ecedee] sticky top-0 z-10">
+                              <tr>
+                                <th className="p-3 w-10 text-center">
+                                  <input
+                                    type="checkbox"
+                                    className="w-4 h-4 cursor-pointer accent-[#000aff]"
+                                    checked={allCurrentSelected}
+                                    onChange={() => handleSelectAllProducts(displayedList)}
+                                    title="Seleccionar / deseleccionar los visibles en esta página"
+                                  />
+                                </th>
+                                <th className="p-3">Perfume</th>
+                                <th className="p-3">Casa</th>
+                                <th className="p-3">Notas Olfativas IA</th>
+                                <th className="p-3">Categoría</th>
+                                <th className="p-3 text-center">Config 1.1</th>
+                                <th className="p-3 text-right">Acciones</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {displayedList.length === 0 ? (
+                                <tr>
+                                  <td colSpan={7} className="p-8 text-center text-[#737780]">
+                                    No se encontraron perfumes con los filtros aplicados.
                                   </td>
                                 </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      );
-                    })()}
-                  </div>
+                              ) : (
+                                displayedList.map((p) => {
+                                  const is11 = p.category === 'Perfumería 1.1';
+                                  const isSelected = selectedProdIds.includes(p.id);
+                                  const hasNotes = p.olfactory_family && p.olfactory_family.length > 4;
+                                  const isEnrichingThis = singleEnrichingId === p.id;
+
+                                  return (
+                                    <tr key={p.id} className={`border-b border-[#ecedee] hover:bg-neutral-50 transition-colors ${isSelected ? 'bg-[#f4f6ff]' : ''}`}>
+                                      <td className="p-3 text-center">
+                                        <input
+                                          type="checkbox"
+                                          className="w-4 h-4 cursor-pointer accent-[#000aff]"
+                                          checked={isSelected}
+                                          onChange={() => handleToggleSelectProduct(p.id)}
+                                        />
+                                      </td>
+                                      <td className="p-3">
+                                        <div className="flex items-center gap-2.5">
+                                          {p.image_url ? (
+                                            <img src={p.image_url} alt="" className="w-8 h-8 rounded object-cover border border-[#ecedee] shrink-0 bg-white" />
+                                          ) : (
+                                            <div className="w-8 h-8 rounded bg-[#ecedee] flex items-center justify-center text-[10px] text-[#737780] shrink-0">
+                                              Sin foto
+                                            </div>
+                                          )}
+                                          <div>
+                                            <span className="font-bold text-[#111111] block leading-tight">{p.name}</span>
+                                            <span className="text-[10px] text-[#737780]">{p.id}</span>
+                                          </div>
+                                        </div>
+                                      </td>
+                                      <td className="p-3">{p.brand}</td>
+                                      <td className="p-3">
+                                        {hasNotes ? (
+                                          <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800 flex items-center gap-1 w-max">
+                                            <CheckCircle2 className="w-3 h-3" />
+                                            <span className="truncate max-w-[140px]" title={p.olfactory_family}>{p.olfactory_family}</span>
+                                          </span>
+                                        ) : (
+                                          <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 text-amber-800 flex items-center gap-1 w-max">
+                                            <span>Pendiente IA</span>
+                                          </span>
+                                        )}
+                                      </td>
+                                      <td className="p-3">
+                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                                          is11 ? 'bg-[#000aff] text-white' : 'bg-neutral-200 text-neutral-800'
+                                        }`}>
+                                          {p.category}
+                                        </span>
+                                      </td>
+                                      <td className="p-3 text-center">
+                                        <button
+                                          onClick={() => handleToggle11(p)}
+                                          className={`px-3 py-1 rounded-[6px] text-[11px] font-semibold transition-all cursor-pointer ${
+                                            is11
+                                              ? 'bg-red-50 text-red-700 hover:bg-red-100 border border-red-200'
+                                              : 'bg-[#e5e7ff] text-[#000aff] hover:bg-[#000aff] hover:text-white border border-[#000aff]/30'
+                                          }`}
+                                        >
+                                          {is11 ? 'Quitar de 1.1' : '+ Asignar a 1.1'}
+                                        </button>
+                                      </td>
+                                      <td className="p-3 text-right">
+                                        <div className="flex items-center justify-end gap-1.5">
+                                          <button
+                                            onClick={() => handleEnrichSingle(p)}
+                                            disabled={isEnrichingThis || isAiRunning}
+                                            className="px-2 py-1 rounded bg-[#e5e7ff] text-[#000aff] hover:bg-[#000aff] hover:text-white text-[11px] font-semibold flex items-center gap-1 cursor-pointer transition-colors disabled:opacity-50"
+                                            title="Generar notas y ficha técnica con Gemini IA"
+                                          >
+                                            {isEnrichingThis ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Bot className="w-3 h-3" />}
+                                            <span>IA</span>
+                                          </button>
+                                          <button
+                                            onClick={() => handleOpenEditProduct(p)}
+                                            className="p-1.5 rounded hover:bg-neutral-200 text-[#111111] cursor-pointer"
+                                            title="Editar datos"
+                                          >
+                                            <Edit className="w-3.5 h-3.5" />
+                                          </button>
+                                          <button
+                                            onClick={() => handleDeleteProduct(p.id)}
+                                            className="p-1.5 rounded hover:bg-red-100 text-red-600 cursor-pointer"
+                                            title="Eliminar del catálogo"
+                                          >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                          </button>
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  );
+                                })
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        {/* Barra Inferior de Navegación / Paginador */}
+                        {totalPages > 1 && (
+                          <div className="p-3 bg-[#ecedee]/60 border border-[#d7d7d7] rounded-[10px] flex flex-col sm:flex-row items-center justify-between gap-3 text-[12px] font-mono">
+                            <span className="text-[#444955]">
+                              Página <strong>{safePage}</strong> de <strong>{totalPages}</strong>
+                            </span>
+
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                disabled={safePage <= 1}
+                                className="px-3 py-1.5 rounded-[6px] bg-white border border-[#d7d7d7] text-[#111111] hover:bg-neutral-100 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center gap-1"
+                              >
+                                <ChevronLeft className="w-4 h-4" />
+                                <span>Anterior</span>
+                              </button>
+
+                              <div className="flex items-center gap-1 px-1">
+                                {Array.from({ length: Math.min(5, totalPages) }, (_, idx) => {
+                                  // Calcular ventana deslizante de páginas
+                                  let pageNum = safePage - 2 + idx;
+                                  if (pageNum < 1) pageNum = idx + 1;
+                                  if (pageNum > totalPages) pageNum = totalPages - 4 + idx;
+                                  if (pageNum < 1 || pageNum > totalPages) return null;
+
+                                  const isActive = pageNum === safePage;
+                                  return (
+                                    <button
+                                      key={pageNum}
+                                      onClick={() => setCurrentPage(pageNum)}
+                                      className={`w-8 h-8 rounded-[6px] text-[12px] font-bold cursor-pointer transition-all ${
+                                        isActive
+                                          ? 'bg-[#000aff] text-white shadow-sm'
+                                          : 'bg-white border border-[#d7d7d7] text-[#444955] hover:bg-neutral-100'
+                                      }`}
+                                    >
+                                      {pageNum}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+
+                              <button
+                                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                disabled={safePage >= totalPages}
+                                className="px-3 py-1.5 rounded-[6px] bg-white border border-[#d7d7d7] text-[#111111] hover:bg-neutral-100 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center gap-1"
+                              >
+                                <span>Siguiente</span>
+                                <ChevronRight className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
 

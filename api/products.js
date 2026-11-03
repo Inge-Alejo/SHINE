@@ -68,9 +68,11 @@ export default async function handler(req, res) {
       const countRow = await getOne(`SELECT count(*) as count FROM products ${whereClause}`, params);
       const total = parseInt(countRow?.count || 0, 10);
 
-      const limit = Math.min(500, parseInt(query.limit || 500, 10));
+      const limitParam = query.limit;
+      const isAll = limitParam === 'all' || limitParam === '0';
+      const limit = isAll ? 10000 : Math.min(10000, parseInt(limitParam || 1000, 10));
       const page = Math.max(1, parseInt(query.page || 1, 10));
-      const offset = (page - 1) * limit;
+      const offset = isAll ? 0 : (page - 1) * limit;
 
       const rows = await getAll(
         `SELECT * FROM products ${whereClause} ORDER BY brand ASC, name ASC LIMIT ? OFFSET ?`,

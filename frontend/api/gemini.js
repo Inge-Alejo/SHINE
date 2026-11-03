@@ -4,6 +4,38 @@ import { getOne, execute } from './db.js';
 
 const apiKey = process.env.GEMINI_API_KEY;
 
+// Prioridad de modelos: 3.5 Flash Lite y 3.1 Flash Lite en primer lugar con respaldo automático
+const MODEL_CANDIDATES = [
+  process.env.GEMINI_MODEL,
+  'gemini-3.5-flash-lite',
+  'gemini-3.1-flash-lite',
+  'gemini-2.5-flash-lite',
+  'gemini-2.0-flash-lite',
+  'gemini-2.0-flash',
+  'gemini-1.5-flash'
+].filter(Boolean);
+
+async function callGeminiModel(ai, prompt, isJson = true) {
+  let lastError = null;
+  const config = isJson ? { responseMimeType: 'application/json' } : {};
+
+  for (const modelName of MODEL_CANDIDATES) {
+    try {
+      const response = await ai.models.generateContent({
+        model: modelName,
+        contents: prompt,
+        config
+      });
+      return { response, modelUsed: modelName };
+    } catch (err) {
+      lastError = err;
+      console.warn(`[Gemini API] Modelo ${modelName} falló o no disponible (${err.message}). Intentando siguiente modelo en cascada...`);
+    }
+  }
+
+  throw lastError || new Error('No se pudo conectar con ningún modelo de Gemini disponible');
+}
+
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
 
@@ -50,14 +82,7 @@ Responde ÚNICAMENTE en formato JSON con la siguiente estructura exacta:
   "official_bottle_description": "Descripción física del frasco oficial (color del vidrio, forma, color de tapa, detalles)"
 }`;
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: prompt,
-        config: {
-          responseMimeType: 'application/json'
-        }
-      });
-
+      const { response, modelUsed } = await callGeminiModel(ai, prompt, true);
       const parsed = JSON.parse(response.text.trim());
 
       // Si se envió product_id, actualizar la base de datos automáticamente
@@ -89,6 +114,7 @@ Responde ÚNICAMENTE en formato JSON con la siguiente estructura exacta:
       return res.status(200).json({
         success: true,
         data: parsed,
+        model_used: modelUsed,
         updated_in_db: Boolean(product_id)
       });
     }
@@ -118,12 +144,7 @@ JSON estricto:
   "base_notes": "Notas fondo"
 }`;
 
-          const resp = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: { responseMimeType: 'application/json' }
-          });
-
+          const { response: resp, modelUsed } = await callGeminiModel(ai, prompt, true);
           const pData = JSON.parse(resp.text.trim());
 
           await execute(
@@ -133,7 +154,7 @@ JSON estricto:
             [pData.olfactory_family, pData.gender, pData.description, item.id]
           );
 
-          results.push({ id: item.id, name: item.name, success: true, data: pData });
+          results.push({ id: item.id, name: item.name, success: true, model_used: modelUsed, data: pData });
         } catch (itemErr) {
           results.push({ id: item.id, name: item.name, success: false, error: itemErr.message });
         }
@@ -162,16 +183,11 @@ Responde en JSON:
   "transparency_advice": "Consejo de extracción"
 }`;
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: prompt,
-        config: {
-          responseMimeType: 'application/json'
-        }
-      });
+      const { response, modelUsed } = await callGeminiModel(ai, prompt, true);
 
       return res.status(200).json({
         success: true,
+        model_used: modelUsed,
         reference: JSON.parse(response.text.trim())
       });
     }

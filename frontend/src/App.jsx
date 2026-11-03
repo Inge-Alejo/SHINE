@@ -32,7 +32,7 @@ export default function App() {
     try {
       const [settData, prodData] = await Promise.all([
         fetchSettings(),
-        fetchProducts({ status: 'publicado', limit: 500 })
+        fetchProducts({ status: 'publicado', limit: 'all' })
       ]);
       setSettings(settData);
       if (prodData && prodData.data) {

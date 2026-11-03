@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import { CartProvider } from './context/CartContext';
 import { fetchSettings, fetchProducts } from './services/api';
 import Header from './components/Header';
@@ -138,6 +140,10 @@ export default function App() {
           onClose={() => setIsAdminOpen(false)}
           onRefreshCatalog={loadData}
         />
+
+        {/* Vercel Web Analytics & Real Experience Performance Insights */}
+        <Analytics />
+        <SpeedInsights />
       </div>
     </CartProvider>
   );

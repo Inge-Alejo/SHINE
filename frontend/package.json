@@ -12,6 +12,8 @@
   "dependencies": {
     "@google/genai": "^2.32.0",
     "@tailwindcss/vite": "^4.3.4",
+    "@vercel/analytics": "^2.0.1",
+    "@vercel/speed-insights": "^2.0.0",
     "bcryptjs": "^2.4.3",
     "dotenv": "^16.4.7",
     "jsonwebtoken": "^9.0.2",

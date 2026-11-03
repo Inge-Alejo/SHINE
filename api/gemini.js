@@ -79,7 +79,8 @@ export default async function handler(req, res) {
 
       const prompt = `Actúa como un maestro perfumista internacional y redactor editorial de fragancias de lujo.
 Proporciona la ficha técnica oficial del perfume: "${perfume_name}" de la casa "${brand || ''}".
-IMPORTANTE sobre el género: Clasifica estrictamente como "Hombre", "Mujer" o "Unisex". Ten en cuenta que la gran mayoría de perfumes árabes, orientales y nicho (como Afnan, Lattafa, Al Haramain, Armaf, Creed, Tom Ford, etc.) son UNISEX. En caso de duda o versatilidad, clasifícalo siempre como "Unisex".
+IMPORTANTE sobre el género: Clasifica objetivamente según su perfil olfativo y público objetivo oficial como "Hombre", "Mujer" o "Unisex". 
+Ten en cuenta la realidad del mercado: muchas fragancias árabes o nicho son genuinamente Unisex (como Khamrah, 9 AM Dive, Bade'e Al Oud), pero muchas otras son claramente masculinas (como 9 PM, Club de Nuit Intense Man, Asad) o femeninas (como Yara, 9 PM Pour Femme, Club de Nuit Woman). No generalices: asigna el género exacto que le corresponde.
 Responde ÚNICAMENTE en formato JSON con la siguiente estructura exacta:
 {
   "olfactory_family": "Familia olfativa principal (ej: Oriental Amaderada)",
@@ -144,7 +145,7 @@ Responde ÚNICAMENTE en formato JSON con la siguiente estructura exacta:
         const item = items[i];
         try {
           const prompt = `Ficha técnica concisa para perfume "${item.name}" de "${item.brand || ''}".
-IMPORTANTE: "gender" debe ser estrictamente "Hombre", "Mujer" o "Unisex". Recuerda que la gran mayoría de perfumes árabes u orientales son Unisex.
+IMPORTANTE: Clasifica con precisión en "Hombre", "Mujer" o "Unisex" según su público objetivo y perfil real (ej: 9 PM y Asad son Hombre, Yara es Mujer, Khamrah y 9 AM Dive son Unisex).
 JSON estricto:
 {
   "olfactory_family": "Familia",

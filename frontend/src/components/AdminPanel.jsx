@@ -3,12 +3,13 @@ import {
   X, Lock, ShieldCheck, Database, RefreshCw, Settings, Image as ImageIcon, 
   Plus, Edit, Trash2, CheckCircle2, AlertTriangle, ExternalLink, Sparkles, 
   Upload, Search, Eye, LogOut, Bot, CheckSquare, Square, Play, Pause, Zap,
-  ChevronLeft, ChevronRight
+  ChevronLeft, ChevronRight, Link as LinkIcon, ImagePlus
 } from 'lucide-react';
 import { 
   adminLogin, fetchDashboard, updateCommercialSettings, createProduct, 
   updateProduct, deleteProduct, fetchProducts,
   fetchPendingImages, uploadProductImage, approveImageCandidate,
+  assignProductImageUrl, removeProductImage,
   enrichWithGemini, batchEnrichWithGemini, getGeminiBottleReference
 } from '../services/api';
 import { useCart } from '../context/CartContext';
@@ -80,6 +81,14 @@ export default function AdminPanel({ isOpen, onClose, onRefreshCatalog }) {
   const [uploadFile, setUploadFile] = useState(null);
   const [uploadNotes, setUploadNotes] = useState('');
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+
+  // Buscador, Asignador Rápido y Vista Previa de Imágenes
+  const [imgUrlInput, setImgUrlInput] = useState('');
+  const [imgSearchTerm, setImgSearchTerm] = useState('');
+  const [imgFilterTab, setImgFilterTab] = useState('without_image'); // 'without_image', 'all', 'with_image'
+  const [bottleReferenceData, setBottleReferenceData] = useState(null);
+  const [isLoadingBottleRef, setIsLoadingBottleRef] = useState(false);
+  const [isAssigningUrl, setIsAssigningUrl] = useState(false);
 
   // Cargar datos al abrir o loguear
   useEffect(() => {
@@ -482,6 +491,89 @@ export default function AdminPanel({ isOpen, onClose, onRefreshCatalog }) {
     } finally {
       setIsUploadingImage(false);
     }
+  };
+
+  // Consultar ficha visual del frasco con Gemini IA
+  const handleGetBottleRef = async (prod) => {
+    setIsLoadingBottleRef(true);
+    setBottleReferenceData(null);
+    try {
+      const res = await getGeminiBottleReference(token, {
+        perfume_name: prod.name,
+        brand: prod.brand
+      });
+      if (res.success && res.reference) {
+        setBottleReferenceData({
+          product: prod,
+          reference: res.reference
+        });
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsLoadingBottleRef(false);
+    }
+  };
+
+  // Asignar imagen (por URL o por Base64 de archivo) directamente a Postgres
+  const handleAssignImageUrl = async (productId, url) => {
+    if (!productId || !url) {
+      alert('Por favor selecciona un perfume y proporciona una URL o archivo de imagen.');
+      return;
+    }
+    setIsAssigningUrl(true);
+    try {
+      const res = await assignProductImageUrl(token, {
+        product_id: productId,
+        image_url: url,
+        notes: 'Asignada desde buscador de imágenes'
+      });
+      if (res.success) {
+        setAdminProducts(prev => prev.map(p => p.id === productId ? { ...p, image_url: url } : p));
+        setImgUrlInput('');
+        setUploadSelectedProduct('');
+        loadDashboardData();
+        loadPendingImages();
+        if (onRefreshCatalog) onRefreshCatalog();
+        alert('¡Fotografía asignada al perfume y guardada en Neon Postgres!');
+      } else {
+        alert(res.error || 'Error al asignar imagen');
+      }
+    } catch (e) {
+      alert('Error de conexión al asignar imagen');
+    } finally {
+      setIsAssigningUrl(false);
+    }
+  };
+
+  // Quitar imagen actual del perfume
+  const handleRemoveImage = async (productId) => {
+    if (!confirm('¿Deseas quitar la fotografía actual de este perfume?')) return;
+    try {
+      const res = await removeProductImage(token, productId);
+      if (res.success) {
+        setAdminProducts(prev => prev.map(p => p.id === productId ? { ...p, image_url: null } : p));
+        loadDashboardData();
+        loadPendingImages();
+        if (onRefreshCatalog) onRefreshCatalog();
+      }
+    } catch (e) {
+      alert('Error al quitar imagen');
+    }
+  };
+
+  // Convertir archivo local seleccionado a Base64 para guardarlo directo en Postgres
+  const handleFileToUrl = (file) => {
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      alert('El archivo es superior a 2MB. Te recomendamos usar imágenes optimizadas PNG de menos de 1MB.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setImgUrlInput(e.target.result);
+    };
+    reader.readAsDataURL(file);
   };
 
   if (!isOpen) return null;
@@ -1522,121 +1614,366 @@ export default function AdminPanel({ isOpen, onClose, onRefreshCatalog }) {
                 </div>
               )}
 
-              {/* TAB 4: GESTIÓN DE FOTOGRAFÍAS */}
+              {/* TAB 4: GESTIÓN Y ADQUISICIÓN DE FOTOGRAFÍAS */}
               {activeTab === 'images' && (
                 <div className="space-y-6">
                   <div>
-                    <h3 className="text-2xl font-bold text-[#111111] tracking-tight">Gestión y Procedencia de Fotografías</h3>
+                    <h3 className="text-2xl font-bold text-[#111111] tracking-tight flex items-center gap-2">
+                      <ImageIcon className="w-6 h-6 text-[#000aff]" />
+                      <span>Centro de Adquisición de Fotografías (Sin Fondo)</span>
+                    </h3>
                     <p className="text-[13px] text-[#737780]">
-                      Asigna imágenes reales a perfumes, revisa la procedencia de cada fotografía y aprueba candidatos.
+                      Encuentra frascos oficiales en formato PNG transparente, previsualízalos en tiempo real y asígnalos directamente a la base de datos de Neon Postgres.
                     </p>
                   </div>
 
-                  {/* Upload new image widget */}
-                  <div className="p-6 rounded-[10px] border border-[#ecedee] bg-[#ecedee]/40 space-y-4">
-                    <h4 className="text-base font-bold text-[#111111] flex items-center gap-2">
-                      <Upload className="w-4 h-4 text-[#000aff]" />
-                      <span>Cargar Fotografía Propia para un Perfume</span>
+                  {/* Asistente Rápido de Asignación y Previsualización */}
+                  <div className="p-6 rounded-[12px] border border-[#ecedee] bg-white space-y-5 shadow-sm">
+                    <h4 className="text-base font-bold text-[#111111] flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <ImagePlus className="w-5 h-5 text-[#000aff]" />
+                        <span>Asistente de Búsqueda y Asignación de Frasco</span>
+                      </div>
+                      {uploadSelectedProduct && (
+                        <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-[#e5e7ff] text-[#000aff] font-bold">
+                          Perfume Seleccionado: {uploadSelectedProduct}
+                        </span>
+                      )}
                     </h4>
 
-                    <form onSubmit={handleUploadImageSubmit} className="space-y-4">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <label className="text-[12px] font-mono text-[#111111] font-semibold block mb-1">
-                            Seleccionar Perfume:
-                          </label>
-                          <select
-                            value={uploadSelectedProduct}
-                            onChange={(e) => setUploadSelectedProduct(e.target.value)}
-                            required
-                            className="w-full px-3 py-2 bg-white rounded-[8px] border border-[#d7d7d7] text-[13px]"
-                          >
-                            <option value="">-- Elige un perfume del catálogo --</option>
-                            {pendingImagesData.products_without_image.map(p => (
-                              <option key={p.id} value={p.id}>
-                                [{p.id}] {p.name} - {p.brand} ({p.category})
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-
-                        <div>
-                          <label className="text-[12px] font-mono text-[#111111] font-semibold block mb-1">
-                            Archivo de Imagen (JPG, PNG o WebP, máx 5MB):
-                          </label>
-                          <input
-                            type="file"
-                            accept="image/jpeg,image/png,image/webp"
-                            required
-                            onChange={(e) => setUploadFile(e.target.files[0])}
-                            className="w-full px-3 py-1.5 bg-white rounded-[8px] border border-[#d7d7d7] text-[12px]"
-                          />
-                        </div>
-                      </div>
-
+                    {/* Selector de Perfume */}
+                    <div className="space-y-3">
                       <div>
                         <label className="text-[12px] font-mono text-[#111111] font-semibold block mb-1">
-                          Observaciones o Procedencia de la Fotografía:
+                          1. Elige el Perfume que deseas configurar:
                         </label>
-                        <input
-                          type="text"
-                          value={uploadNotes}
-                          onChange={(e) => setUploadNotes(e.target.value)}
-                          placeholder="Ej: Fotografía oficial catálogo Dior tomada sobre fondo blanco"
-                          className="w-full px-3 py-2 bg-white rounded-[8px] border border-[#d7d7d7] text-[13px]"
-                        />
+                        <select
+                          value={uploadSelectedProduct}
+                          onChange={(e) => {
+                            setUploadSelectedProduct(e.target.value);
+                            const p = adminProducts.find(x => x.id === e.target.value);
+                            if (p && p.image_url) {
+                              setImgUrlInput(p.image_url);
+                            } else {
+                              setImgUrlInput('');
+                            }
+                            setBottleReferenceData(null);
+                          }}
+                          className="w-full px-3 py-2 bg-[#ecedee] rounded-[8px] text-[13px] font-mono font-medium focus:ring-1 focus:ring-[#000aff]"
+                        >
+                          <option value="">-- Selecciona un perfume del catálogo --</option>
+                          <optgroup label="⚠️ Pendientes de Fotografía">
+                            {adminProducts.filter(p => !p.image_url).map(p => (
+                              <option key={p.id} value={p.id}>
+                                ⚠️ [{p.id}] {p.name} - {p.brand} ({p.category})
+                              </option>
+                            ))}
+                          </optgroup>
+                          <optgroup label="✅ Con Fotografía Asignada">
+                            {adminProducts.filter(p => p.image_url).map(p => (
+                              <option key={p.id} value={p.id}>
+                                ✅ [{p.id}] {p.name} - {p.brand}
+                              </option>
+                            ))}
+                          </optgroup>
+                        </select>
                       </div>
 
-                      <button
-                        type="submit"
-                        disabled={isUploadingImage}
-                        className="px-5 py-2.5 rounded-[8px] bg-[#111111] hover:bg-[#222222] text-white text-[13px] font-medium flex items-center gap-2 cursor-pointer disabled:opacity-50"
-                      >
-                        {isUploadingImage ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                        <span>Subir y Asignar Fotografía</span>
-                      </button>
-                    </form>
+                      {/* Botones de Asistencia de Búsqueda con 1 Clic */}
+                      {(() => {
+                        const targetProd = adminProducts.find(p => p.id === uploadSelectedProduct);
+                        if (!targetProd) return null;
+
+                        const googleQuery = `${targetProd.name} ${targetProd.brand} perfume bottle png`;
+                        const googlePngUrl = `https://www.google.com/search?tbm=isch&tbs=ic:trans&q=${encodeURIComponent(googleQuery)}`;
+                        const fragranticaUrl = `https://www.google.com/search?q=${encodeURIComponent('site:fragrantica.com ' + targetProd.name + ' ' + targetProd.brand)}`;
+
+                        return (
+                          <div className="p-4 rounded-[10px] bg-[#f8f9fa] border border-[#ecedee] space-y-3 animate-fadeIn">
+                            <span className="text-[12px] font-mono font-bold text-[#111111] block">
+                              2. Búsqueda con 1 Clic para: <span className="text-[#000aff]">{targetProd.name} ({targetProd.brand})</span>
+                            </span>
+
+                            <div className="flex flex-wrap gap-2">
+                              <a
+                                href={googlePngUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-3.5 py-2 rounded-[8px] bg-[#000aff] hover:bg-[#0008cc] text-white text-[12px] font-semibold flex items-center gap-1.5 shadow-sm transition-all"
+                              >
+                                <ExternalLink className="w-3.5 h-3.5" />
+                                <span>Buscar PNG Transparente en Google</span>
+                              </a>
+
+                              <a
+                                href={fragranticaUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-3.5 py-2 rounded-[8px] bg-white border border-[#d7d7d7] hover:bg-neutral-100 text-[#111111] text-[12px] font-medium flex items-center gap-1.5 transition-all"
+                              >
+                                <ExternalLink className="w-3.5 h-3.5 text-neutral-500" />
+                                <span>Ver Ficha en Fragrantica</span>
+                              </a>
+
+                              <button
+                                type="button"
+                                onClick={() => handleGetBottleRef(targetProd)}
+                                disabled={isLoadingBottleRef}
+                                className="px-3.5 py-2 rounded-[8px] bg-[#e5e7ff] text-[#000aff] hover:bg-[#000aff] hover:text-white text-[12px] font-semibold flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                              >
+                                {isLoadingBottleRef ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Bot className="w-3.5 h-3.5" />}
+                                <span>Consultar Frasco con Gemini IA</span>
+                              </button>
+                            </div>
+
+                            {/* Ficha Visual de Gemini IA */}
+                            {bottleReferenceData && bottleReferenceData.product?.id === targetProd.id && (
+                              <div className="p-3 bg-white rounded-[8px] border border-[#000aff]/30 text-[12px] font-mono space-y-1.5 animate-fadeIn">
+                                <p className="font-bold text-[#000aff]">✨ Referencia Oficial de Frasco (Gemini IA):</p>
+                                <p>• <strong>Búsqueda sugerida:</strong> {bottleReferenceData.reference.query_reference || targetProd.name}</p>
+                                <p>• <strong>Color del frasco y líquido:</strong> {bottleReferenceData.reference.bottle_color || 'N/A'}</p>
+                                <p>• <strong>Estilo de tapa:</strong> {bottleReferenceData.reference.cap_style || 'N/A'}</p>
+                                <p className="text-[11px] text-[#737780] pt-1">💡 {bottleReferenceData.reference.transparency_advice}</p>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
+
+                      {/* Campo para Pegar URL o Cargar Archivo */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                        <div className="space-y-2">
+                          <label className="text-[12px] font-mono text-[#111111] font-semibold block">
+                            3. Pegar Enlace Directo de la Imagen (URL):
+                          </label>
+                          <div className="relative">
+                            <LinkIcon className="w-4 h-4 text-[#737780] absolute left-3 top-1/2 -translate-y-1/2" />
+                            <input
+                              type="url"
+                              value={imgUrlInput}
+                              onChange={(e) => setImgUrlInput(e.target.value)}
+                              placeholder="https://.../botella-sauvage.png"
+                              className="w-full pl-9 pr-3 py-2 bg-[#ecedee] rounded-[8px] text-[13px] font-mono focus:outline-none focus:ring-1 focus:ring-[#000aff]"
+                            />
+                          </div>
+                          <span className="text-[11px] text-[#737780] block">
+                            Copia el enlace de la imagen con fondo transparente o blanco y pégalo aquí.
+                          </span>
+
+                          <div className="pt-2">
+                            <label className="text-[12px] font-mono text-[#111111] font-semibold block mb-1">
+                              O cargar archivo PNG / WebP desde tu equipo:
+                            </label>
+                            <input
+                              type="file"
+                              accept="image/png,image/webp,image/jpeg"
+                              onChange={(e) => {
+                                if (e.target.files && e.target.files[0]) {
+                                  handleFileToUrl(e.target.files[0]);
+                                }
+                              }}
+                              className="w-full px-3 py-1.5 bg-[#ecedee] rounded-[8px] text-[12px] cursor-pointer"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Previsualizador de Frasco en Tiempo Real */}
+                        <div className="space-y-2">
+                          <label className="text-[12px] font-mono text-[#111111] font-semibold block">
+                            Previsualización en Catálogo SHINE:
+                          </label>
+                          <div className="h-48 border border-dashed border-[#d7d7d7] rounded-[10px] bg-white flex items-center justify-center relative overflow-hidden p-4 group">
+                            {imgUrlInput ? (
+                              <div className="flex flex-col items-center justify-center text-center space-y-2">
+                                <img
+                                  src={imgUrlInput}
+                                  alt="Preview"
+                                  className="max-h-36 object-contain drop-shadow-md transition-transform group-hover:scale-105"
+                                  onError={(e) => {
+                                    e.target.onerror = null;
+                                  }}
+                                />
+                                <span className="text-[10px] font-mono text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded">
+                                  ✓ Vista Previa Lista
+                                </span>
+                              </div>
+                            ) : (
+                              <div className="text-center text-[#737780] space-y-1">
+                                <ImageIcon className="w-8 h-8 mx-auto text-[#d7d7d7]" />
+                                <span className="text-[12px] font-mono block">Sin imagen seleccionada</span>
+                                <span className="text-[10px] block">Pega una URL o sube un archivo para ver la vista previa.</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Botón de Confirmación y Guardado */}
+                      <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#ecedee]">
+                        {uploadSelectedProduct && adminProducts.find(p => p.id === uploadSelectedProduct)?.image_url && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveImage(uploadSelectedProduct)}
+                            className="px-4 py-2 rounded-[8px] border border-red-200 text-red-600 hover:bg-red-50 text-[12px] font-medium cursor-pointer"
+                          >
+                            Quitar Imagen Actual
+                          </button>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => handleAssignImageUrl(uploadSelectedProduct, imgUrlInput)}
+                          disabled={!uploadSelectedProduct || !imgUrlInput || isAssigningUrl}
+                          className="px-6 py-2.5 rounded-[8px] bg-[#000aff] hover:bg-[#0008cc] text-white text-[13px] font-semibold flex items-center gap-2 cursor-pointer transition-all disabled:opacity-50 shadow-md"
+                        >
+                          {isAssigningUrl ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                          <span>Guardar y Asignar al Perfume</span>
+                        </button>
+                      </div>
+                    </div>
                   </div>
 
-                  {/* List of perfumes needing photos */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-base font-bold text-[#111111]">
-                        Perfumes Pendientes de Fotografía ({pendingImagesData.products_without_image.length})
-                      </h4>
+                  {/* Galería Visual de Perfumes del Catálogo */}
+                  <div className="p-6 rounded-[12px] border border-[#ecedee] bg-white space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <h4 className="text-base font-bold text-[#111111]">Galería de Frascos del Catálogo</h4>
+                        <p className="text-[12px] text-[#737780]">
+                          Explora el estado visual de cada producto y asigna imágenes con 1 clic.
+                        </p>
+                      </div>
+
+                      {/* Filtros de la Galería */}
+                      <div className="flex items-center gap-1.5 text-[12px] font-mono">
+                        <button
+                          onClick={() => setImgFilterTab('without_image')}
+                          className={`px-3 py-1.5 rounded-[8px] cursor-pointer transition-all ${
+                            imgFilterTab === 'without_image' ? 'bg-[#000aff] text-white font-bold' : 'bg-[#ecedee] text-[#444955]'
+                          }`}
+                        >
+                          Sin Foto ({adminProducts.filter(p => !p.image_url).length})
+                        </button>
+                        <button
+                          onClick={() => setImgFilterTab('with_image')}
+                          className={`px-3 py-1.5 rounded-[8px] cursor-pointer transition-all ${
+                            imgFilterTab === 'with_image' ? 'bg-[#111111] text-white font-bold' : 'bg-[#ecedee] text-[#444955]'
+                          }`}
+                        >
+                          Con Foto ({adminProducts.filter(p => p.image_url).length})
+                        </button>
+                        <button
+                          onClick={() => setImgFilterTab('all')}
+                          className={`px-3 py-1.5 rounded-[8px] cursor-pointer transition-all ${
+                            imgFilterTab === 'all' ? 'bg-[#111111] text-white font-bold' : 'bg-[#ecedee] text-[#444955]'
+                          }`}
+                        >
+                          Todos ({adminProducts.length})
+                        </button>
+                      </div>
                     </div>
 
-                    <div className="max-h-80 overflow-y-auto border border-[#ecedee] rounded-[10px]">
-                      <table className="w-full text-left text-[12px] font-mono">
-                        <thead className="bg-[#ecedee] sticky top-0">
-                          <tr>
-                            <th className="p-2.5">ID</th>
-                            <th className="p-2.5">Perfume</th>
-                            <th className="p-2.5">Casa</th>
-                            <th className="p-2.5">Categoría</th>
-                            <th className="p-2.5">Acción</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {pendingImagesData.products_without_image.map(p => (
-                            <tr key={p.id} className="border-b border-[#ecedee] hover:bg-neutral-50">
-                              <td className="p-2.5 text-[#737780]">{p.id}</td>
-                              <td className="p-2.5 font-bold text-[#111111]">{p.name}</td>
-                              <td className="p-2.5">{p.brand}</td>
-                              <td className="p-2.5">{p.category}</td>
-                              <td className="p-2.5">
-                                <button
-                                  onClick={() => setUploadSelectedProduct(p.id)}
-                                  className="text-[#000aff] hover:underline font-medium cursor-pointer"
-                                >
-                                  Cargar Foto
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                    {/* Buscador de la Galería */}
+                    <div className="relative">
+                      <Search className="w-4 h-4 text-[#737780] absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        placeholder="Filtrar por perfume o casa..."
+                        value={imgSearchTerm}
+                        onChange={(e) => setImgSearchTerm(e.target.value)}
+                        className="w-full pl-9 pr-4 py-2 bg-[#ecedee] rounded-[8px] text-[13px] font-mono focus:outline-none focus:ring-1 focus:ring-[#000aff]"
+                      />
                     </div>
+
+                    {/* Grid de Frascos */}
+                    {(() => {
+                      const galleryList = adminProducts
+                        .filter(p => {
+                          if (imgFilterTab === 'without_image' && p.image_url) return false;
+                          if (imgFilterTab === 'with_image' && !p.image_url) return false;
+                          if (imgSearchTerm.trim()) {
+                            const q = imgSearchTerm.toLowerCase().trim();
+                            return (
+                              (p.name && p.name.toLowerCase().includes(q)) ||
+                              (p.brand && p.brand.toLowerCase().includes(q)) ||
+                              (p.id && p.id.toLowerCase().includes(q))
+                            );
+                          }
+                          return true;
+                        })
+                        .slice(0, 100);
+
+                      if (galleryList.length === 0) {
+                        return (
+                          <div className="p-8 text-center text-[#737780] text-[13px] bg-[#ecedee]/40 rounded-[8px]">
+                            No hay perfumes para mostrar en esta vista.
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 max-h-[50vh] overflow-y-auto p-1">
+                          {galleryList.map(p => {
+                            const hasImg = Boolean(p.image_url);
+                            const googleQuery = `${p.name} ${p.brand} perfume bottle png`;
+                            const googlePngUrl = `https://www.google.com/search?tbm=isch&tbs=ic:trans&q=${encodeURIComponent(googleQuery)}`;
+
+                            return (
+                              <div
+                                key={p.id}
+                                className={`p-3 rounded-[10px] border transition-all flex flex-col justify-between text-left space-y-2 bg-white ${
+                                  uploadSelectedProduct === p.id
+                                    ? 'border-[#000aff] ring-2 ring-[#000aff]/20 shadow-md'
+                                    : 'border-[#ecedee] hover:border-[#d7d7d7] hover:shadow-sm'
+                                }`}
+                              >
+                                <div>
+                                  <div className="h-28 bg-[#f8f9fa] rounded-[8px] flex items-center justify-center p-2 relative overflow-hidden mb-2">
+                                    {hasImg ? (
+                                      <img src={p.image_url} alt="" className="h-full object-contain drop-shadow" />
+                                    ) : (
+                                      <div className="text-center text-[#737780] space-y-1">
+                                        <ImageIcon className="w-6 h-6 mx-auto text-[#d7d7d7]" />
+                                        <span className="text-[10px] font-mono block">Sin Foto</span>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  <span className="text-[10px] font-mono text-[#737780] block truncate">{p.brand}</span>
+                                  <h5 className="text-[12px] font-bold text-[#111111] line-clamp-1 leading-snug" title={p.name}>
+                                    {p.name}
+                                  </h5>
+                                </div>
+
+                                <div className="space-y-1.5 pt-1 border-t border-[#ecedee]">
+                                  <div className="flex items-center gap-1">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setUploadSelectedProduct(p.id);
+                                        setImgUrlInput(p.image_url || '');
+                                      }}
+                                      className="flex-1 py-1 rounded bg-[#ecedee] hover:bg-[#d7d7d7] text-[#111111] text-[11px] font-medium text-center cursor-pointer transition-colors"
+                                    >
+                                      {hasImg ? 'Editar' : 'Asignar'}
+                                    </button>
+
+                                    <a
+                                      href={googlePngUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      title="Buscar PNG Transparente en Google"
+                                      className="p-1 rounded bg-[#e5e7ff] text-[#000aff] hover:bg-[#000aff] hover:text-white transition-colors cursor-pointer"
+                                    >
+                                      <Search className="w-3.5 h-3.5" />
+                                    </a>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               )}

@@ -74,6 +74,20 @@ export default async function handler(req, res) {
     }
   }
 
+  if (method === 'POST' && action === 'remove_image') {
+    try {
+      const { product_id } = req.body || {};
+      if (!product_id) return res.status(400).json({ success: false, error: 'product_id requerido' });
+
+      await execute('UPDATE products SET image_url = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [product_id]);
+      await execute('UPDATE product_images SET is_primary = 0 WHERE product_id = ?', [product_id]);
+
+      return res.status(200).json({ success: true, message: 'Fotografía removida del perfume exitosamente' });
+    } catch (error) {
+      return res.status(500).json({ success: false, error: error.message });
+    }
+  }
+
   return res.status(400).json({ success: false, error: 'Acción no soportada' });
 }
 

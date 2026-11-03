@@ -300,6 +300,30 @@ export async function approveImageCandidate(token, imageId) {
   return res.json();
 }
 
+export async function assignProductImageUrl(token, { product_id, image_url, notes }) {
+  const res = await fetch(`${API_BASE}/image-manager?action=assign_url`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({ product_id, image_url, notes })
+  });
+  return res.json();
+}
+
+export async function removeProductImage(token, productId) {
+  const res = await fetch(`${API_BASE}/image-manager?action=remove_image`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({ product_id: productId })
+  });
+  return res.json();
+}
+
 // ==========================================
 // GEMINI AI INTEGRATION
 // ==========================================

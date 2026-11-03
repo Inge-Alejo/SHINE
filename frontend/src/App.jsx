@@ -89,6 +89,8 @@ export default function App() {
 
         {/* Hero Section */}
         <Hero
+          products={products}
+          settings={settings}
           onExploreInspirations={() => handleSelectCategory('Inspiraciones')}
           onExploreOriginals={() => handleSelectCategory('Originales')}
           onOpenProductDetail={(prod) => setSelectedProduct(prod)}

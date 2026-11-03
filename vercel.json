@@ -38,3 +38,4 @@
     { "source": "/((?!api|uploads|favicon|icons|data).*)", "destination": "/index.html" }
   ]
 }
+

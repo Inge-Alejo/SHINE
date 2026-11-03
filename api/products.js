@@ -57,8 +57,8 @@ export default async function handler(req, res) {
       }
 
       if (query.search) {
-        const term = `%${query.search.trim()}%`;
-        conditions.push('(name ILIKE ? OR brand ILIKE ? OR description ILIKE ? OR olfactory_family ILIKE ? OR raw_inspiracion ILIKE ?)');
+        const term = `%${query.search.trim().toLowerCase()}%`;
+        conditions.push('(LOWER(name) LIKE ? OR LOWER(brand) LIKE ? OR LOWER(description) LIKE ? OR LOWER(olfactory_family) LIKE ? OR LOWER(raw_inspiracion) LIKE ?)');
         params.push(term, term, term, term, term);
       }
 

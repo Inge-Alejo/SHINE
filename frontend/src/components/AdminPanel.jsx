@@ -601,7 +601,7 @@ export default function AdminPanel({ isOpen, onClose, onRefreshCatalog }) {
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 animate-fadeIn">
-      <div className="bg-white rounded-[14.4px] w-full max-w-6xl max-h-[92vh] flex flex-col shadow-2xl border border-[#ecedee] overflow-hidden">
+      <div className="bg-white rounded-[14.4px] w-full max-w-7xl max-h-[94vh] flex flex-col shadow-2xl border border-[#ecedee] overflow-hidden">
         {/* Header */}
         <div className="px-6 py-4 border-b border-[#ecedee] bg-[#111111] text-white flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -972,12 +972,12 @@ export default function AdminPanel({ isOpen, onClose, onRefreshCatalog }) {
 
                   {/* Filtros de Búsqueda, Categoría y Control de Paginación */}
                   <div className="space-y-3">
-                    <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between">
-                      <div className="relative flex-1">
+                    <div className="flex flex-col xl:flex-row gap-3 items-stretch xl:items-center justify-between">
+                      <div className="relative flex-1 min-w-[240px]">
                         <Search className="w-4 h-4 text-[#737780] absolute left-3 top-1/2 -translate-y-1/2" />
                         <input
                           type="text"
-                          placeholder="Buscar por nombre, casa o notas olfativas..."
+                          placeholder="Buscar por nombre, casa, código o notas..."
                           value={prodSearch}
                           onChange={(e) => {
                             setProdSearch(e.target.value);
@@ -994,7 +994,7 @@ export default function AdminPanel({ isOpen, onClose, onRefreshCatalog }) {
                             setCurrentPage(1);
                           }}
                           className={`px-3 py-1.5 rounded-[8px] text-[12px] font-mono cursor-pointer transition-all ${
-                            prodCategoryFilter === '' ? 'bg-[#111111] text-white font-bold' : 'bg-[#ecedee] text-[#444955]'
+                            prodCategoryFilter === '' ? 'bg-[#111111] text-white font-bold' : 'bg-[#ecedee] text-[#444955] hover:bg-[#d7d7d7]'
                           }`}
                         >
                           Todos ({adminProducts.length})
@@ -1006,7 +1006,7 @@ export default function AdminPanel({ isOpen, onClose, onRefreshCatalog }) {
                             setCurrentPage(1);
                           }}
                           className={`px-3 py-1.5 rounded-[8px] text-[12px] font-mono cursor-pointer transition-all flex items-center gap-1.5 ${
-                            prodCategoryFilter === 'Perfumería 1.1' ? 'bg-[#000aff] text-white font-bold shadow-sm' : 'bg-[#ecedee] text-[#000aff]'
+                            prodCategoryFilter === 'Perfumería 1.1' ? 'bg-[#000aff] text-white font-bold shadow-sm' : 'bg-[#ecedee] text-[#000aff] hover:bg-blue-100'
                           }`}
                         >
                           <Sparkles className="w-3.5 h-3.5" />
@@ -1019,7 +1019,7 @@ export default function AdminPanel({ isOpen, onClose, onRefreshCatalog }) {
                             setCurrentPage(1);
                           }}
                           className={`px-3 py-1.5 rounded-[8px] text-[12px] font-mono cursor-pointer transition-all ${
-                            prodCategoryFilter === 'Inspiraciones' ? 'bg-[#111111] text-white font-bold' : 'bg-[#ecedee] text-[#444955]'
+                            prodCategoryFilter === 'Inspiraciones' ? 'bg-[#111111] text-white font-bold' : 'bg-[#ecedee] text-[#444955] hover:bg-[#d7d7d7]'
                           }`}
                         >
                           Inspiraciones ({adminProducts.filter(p => p.category === 'Inspiraciones').length})
@@ -1147,11 +1147,11 @@ export default function AdminPanel({ isOpen, onClose, onRefreshCatalog }) {
                         </div>
 
                         {/* Contenedor con Scroll de la Tabla */}
-                        <div className="border border-[#ecedee] rounded-[10px] overflow-hidden max-h-[60vh] overflow-y-auto bg-white">
-                          <table className="w-full text-left text-[12px] font-mono">
+                        <div className="border border-[#ecedee] rounded-[10px] overflow-x-auto overflow-y-auto max-h-[60vh] bg-white shadow-xs">
+                          <table className="w-full min-w-[960px] text-left text-[12px] font-mono">
                             <thead className="bg-[#ecedee] sticky top-0 z-10">
                               <tr>
-                                <th className="p-3 w-10 text-center">
+                                <th className="p-3 w-10 text-center shrink-0">
                                   <input
                                     type="checkbox"
                                     className="w-4 h-4 cursor-pointer accent-[#000aff]"
@@ -1160,13 +1160,13 @@ export default function AdminPanel({ isOpen, onClose, onRefreshCatalog }) {
                                     title="Seleccionar / deseleccionar los visibles en esta página"
                                   />
                                 </th>
-                                <th className="p-3">Perfume</th>
-                                <th className="p-3">Casa</th>
-                                <th className="p-3 text-center">Género</th>
-                                <th className="p-3">Notas Olfativas IA</th>
-                                <th className="p-3">Categoría</th>
-                                <th className="p-3 text-center">Config 1.1</th>
-                                <th className="p-3 text-right">Acciones</th>
+                                <th className="p-3 min-w-[190px]">Perfume</th>
+                                <th className="p-3 min-w-[110px]">Casa</th>
+                                <th className="p-3 text-center min-w-[90px]">Género</th>
+                                <th className="p-3 min-w-[160px]">Notas Olfativas IA</th>
+                                <th className="p-3 min-w-[110px]">Categoría</th>
+                                <th className="p-3 text-center min-w-[130px]">Config 1.1</th>
+                                <th className="p-3 text-right min-w-[130px] pr-4">Acciones</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -1256,12 +1256,12 @@ export default function AdminPanel({ isOpen, onClose, onRefreshCatalog }) {
                                           {is11 ? 'Quitar de 1.1' : '+ Asignar a 1.1'}
                                         </button>
                                       </td>
-                                      <td className="p-3 text-right">
-                                        <div className="flex items-center justify-end gap-1.5">
+                                      <td className="p-3 text-right pr-4">
+                                        <div className="flex items-center justify-end gap-1.5 shrink-0">
                                           <button
                                             onClick={() => handleEnrichSingle(p)}
                                             disabled={isEnrichingThis || isAiRunning}
-                                            className="px-2 py-1 rounded bg-[#e5e7ff] text-[#000aff] hover:bg-[#000aff] hover:text-white text-[11px] font-semibold flex items-center gap-1 cursor-pointer transition-colors disabled:opacity-50"
+                                            className="px-2 py-1 rounded bg-[#e5e7ff] text-[#000aff] hover:bg-[#000aff] hover:text-white text-[11px] font-semibold flex items-center gap-1 cursor-pointer transition-colors disabled:opacity-50 shrink-0"
                                             title="Generar notas y ficha técnica con Gemini IA"
                                           >
                                             {isEnrichingThis ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Bot className="w-3 h-3" />}
@@ -1269,14 +1269,14 @@ export default function AdminPanel({ isOpen, onClose, onRefreshCatalog }) {
                                           </button>
                                           <button
                                             onClick={() => handleOpenEditProduct(p)}
-                                            className="p-1.5 rounded hover:bg-neutral-200 text-[#111111] cursor-pointer"
+                                            className="p-1.5 rounded hover:bg-neutral-200 text-[#111111] cursor-pointer shrink-0"
                                             title="Editar datos"
                                           >
                                             <Edit className="w-3.5 h-3.5" />
                                           </button>
                                           <button
                                             onClick={() => handleDeleteProduct(p.id)}
-                                            className="p-1.5 rounded hover:bg-red-100 text-red-600 cursor-pointer"
+                                            className="p-1.5 rounded hover:bg-red-100 text-red-600 cursor-pointer shrink-0"
                                             title="Eliminar del catálogo"
                                           >
                                             <Trash2 className="w-3.5 h-3.5" />

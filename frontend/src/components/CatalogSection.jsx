@@ -378,7 +378,7 @@ export default function CatalogSection({
                       <div className="w-10 h-10 rounded-[8px] bg-white border border-[#ecedee] flex items-center justify-center text-[12px] font-mono font-bold text-[#111111] shrink-0 shadow-sm overflow-hidden p-1.5 transition-transform group-hover:scale-105">
                         {p.brand_logo_url ? (
                           <img 
-                            src={p.brand_logo_url} 
+                            src={p.brand_logo_url.startsWith('./') ? p.brand_logo_url.substring(1) : p.brand_logo_url} 
                             alt={p.brand} 
                             className="w-full h-full object-contain"
                             onError={(e) => {

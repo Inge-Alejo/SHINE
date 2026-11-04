@@ -103,7 +103,15 @@ export default function ProductDetailModal({ product, onClose }) {
               <div className="flex items-center gap-2 mb-1.5">
                 {product.brand_logo_url && (
                   <div className="w-7 h-7 rounded-[6px] bg-white border border-[#ecedee] p-1 flex items-center justify-center shrink-0 shadow-xs">
-                    <img src={product.brand_logo_url} alt="" className="w-full h-full object-contain" />
+                    <img 
+                      src={product.brand_logo_url.startsWith('./') ? product.brand_logo_url.substring(1) : product.brand_logo_url} 
+                      alt="" 
+                      className="w-full h-full object-contain" 
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.parentElement.style.display = 'none';
+                      }}
+                    />
                   </div>
                 )}
                 <span className="text-[12px] font-mono text-[#000aff] font-semibold uppercase tracking-wider">

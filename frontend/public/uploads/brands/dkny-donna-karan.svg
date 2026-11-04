@@ -1,17 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
-  <rect width="200" height="200" fill="#ffffff" rx="16"/>
-  <rect x="8" y="8" width="184" height="184" fill="none" stroke="#ecedee" stroke-width="2" rx="12"/>
-  <g fill="#111111" text-anchor="middle">
-    <!-- Emblema de lujo -->
-    <circle cx="100" cy="80" r="38" fill="none" stroke="#111111" stroke-width="2.5" opacity="0.3"/>
-    <text x="100" y="93" font-family="'Space Mono', 'Cinzel', 'Playfair Display', serif, monospace" font-size="34" font-weight="bold" letter-spacing="1">
-      D(
-    </text>
-    <text x="100" y="145" font-family="'Plus Jakarta Sans', -apple-system, sans-serif" font-size="13" font-weight="700" letter-spacing="2" text-transform="uppercase">
-      DKNY (Donna Ka.
-    </text>
-    <text x="100" y="162" font-family="'Space Mono', monospace" font-size="8" fill="#737780" letter-spacing="3" text-transform="uppercase">
-      PARFUMS
-    </text>
-  </g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="2500" height="640" viewBox="0 0 46.62 11.94"><path d="M4.08 0H0v11.94h5.1c3.21.019 5.518-2.231 5.52-5.76C10.617 1.773 7.784.015 4.08 0z"/><path d="M4.26 8.4h-.24V3.78h.24c1.465-.027 2.355.686 2.34 2.34.015 1.593-1.007 2.258-2.34 2.28z" fill="#fff"/><path d="M18.6 5.82L22.02 0h-4.38l-1.92 3.84c-.205.436-.454.863-.54 1.38h-.06L15.18 0h-3.9v11.94h3.9l-.06-4.98h.06c.086.484.437.927.66 1.38l1.92 3.6h4.62L18.6 5.82zM23.279 0h3.84l3.6 6.66h.12c-.145-1.022-.32-2.051-.3-3.06V0h3.779v11.94H30.54L27 5.7h-.12c.135.809.251 1.585.24 2.4v3.84h-3.84V0zM39.6 0l1.2 3.12h.12c.143-.365.245-.745.42-1.08L42.12 0h4.5l-3.78 6.84v5.1h-3.9v-5.1L35.1 0h4.5z"/></svg>

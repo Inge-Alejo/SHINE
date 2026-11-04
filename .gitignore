@@ -30,4 +30,6 @@ backend/data/*.sqlite
 Thumbs.db
 .vscode/
 .idea/
+scratch/
+auriga.png
 

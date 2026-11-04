@@ -196,6 +196,17 @@ export default function ProductDetailModal({ product, onClose }) {
                     ${currentSubtotal.toLocaleString('es-CO')} <span className="text-xs text-[#737780]">COP</span>
                   </span>
                 </div>
+
+                {/* Financiación Addi */}
+                <div className="flex items-center justify-between p-2 rounded-[8px] bg-[#00F0D8]/15 border border-[#00F0D8]/40 text-[11.5px] font-mono text-[#111111]">
+                  <div className="flex items-center gap-1.5">
+                    <span className="bg-[#00F0D8] text-[#111111] px-1.5 py-0.5 rounded font-extrabold text-[11px] font-sans lowercase leading-none">
+                      addi
+                    </span>
+                    <span>O en <strong>3 cuotas de ${(Math.round(currentSubtotal / 3)).toLocaleString('es-CO')} COP</strong></span>
+                  </div>
+                  <span className="text-[10px] font-bold text-[#006e62] bg-white/70 px-1.5 py-0.5 rounded">0% interés</span>
+                </div>
               </div>
             ) : (
               /* ORIGINALES & 1.1: Restricción absoluta de precios y ml */

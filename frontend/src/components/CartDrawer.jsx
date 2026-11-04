@@ -162,6 +162,17 @@ export default function CartDrawer() {
                     ${totalAmount.toLocaleString('es-CO')} <span className="text-xs font-normal text-[#737780]">COP</span>
                   </span>
                 </div>
+
+                {/* Financiación Addi en Carrito */}
+                <div className="p-2.5 rounded-[8px] bg-[#00F0D8]/15 border border-[#00F0D8]/40 flex items-center justify-between text-[11px] font-mono text-[#111111]">
+                  <div className="flex items-center gap-1.5">
+                    <span className="bg-[#00F0D8] text-[#111111] px-1.5 py-0.5 rounded font-extrabold text-[11px] font-sans lowercase leading-none">
+                      addi
+                    </span>
+                    <span>O en <strong>3 cuotas de ${(Math.round(totalAmount / 3)).toLocaleString('es-CO')} COP</strong></span>
+                  </div>
+                  <span className="text-[10px] font-bold text-[#006e62] bg-white/80 px-1.5 py-0.5 rounded">0% interés</span>
+                </div>
               </div>
 
               {/* Checkout Button */}
@@ -177,7 +188,7 @@ export default function CartDrawer() {
               {/* Notice */}
               <div className="p-3 bg-[#ecedee] rounded-[8px] space-y-1">
                 <p className="text-[11px] text-[#444955] leading-relaxed">
-                  <strong>Aviso:</strong> Serás dirigido a nuestro WhatsApp oficial (<strong>{settings.whatsapp_display || '+57 310 5964755'}</strong>) con el desglose exacto de tu solicitud. La disponibilidad, entrega y métodos de pago se acordarán directamente por el chat.
+                  <strong>Medios de pago oficiales:</strong> Paga a cuotas con <strong>Addi</strong> (sin tarjeta), todas las tarjetas de crédito/débito, PSE, Bancolombia y Nequi. Serás dirigido a nuestro WhatsApp oficial (<strong>{settings.whatsapp_display || '+57 310 5964755'}</strong>) con el desglose exacto de tu pedido para confirmar disponibilidad y despacho.
                 </p>
               </div>
 

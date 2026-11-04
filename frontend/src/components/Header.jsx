@@ -28,14 +28,17 @@ export default function Header({ onOpenAdmin, onSearchClick, activeCategory, onS
 
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#ecedee]">
-      {/* Announcement Bar */}
-      <div className="bg-[#111111] text-white py-1.5 px-4 text-center text-[12px] font-mono tracking-tight flex items-center justify-center gap-3">
-        <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#000aff] animate-pulse"></span>
-        <span>Envíos asegurados a toda Colombia</span>
-        <span className="opacity-40">•</span>
-        <span className="hidden sm:inline">Atención y asesoría personalizada directa por WhatsApp</span>
-        <span className="opacity-40 hidden sm:inline">•</span>
-        <span className="text-[#e5e7ff] font-medium">Catálogo Oficial 2026</span>
+      {/* Announcement Bar: Addi + Medios de Pago + Envíos */}
+      <div className="bg-[#0b132b] text-white py-1.5 px-4 text-center text-[12px] font-mono tracking-tight flex flex-wrap items-center justify-center gap-2 sm:gap-3 border-b border-[#00F0D8]/20">
+        <div className="flex items-center gap-1.5 bg-[#00F0D8] text-[#111111] px-2 py-0.5 rounded-[5px] font-bold text-[11px] font-sans">
+          <span className="lowercase font-extrabold tracking-tight">addi</span>
+          <span className="text-[9px] font-mono uppercase bg-black text-[#00F0D8] px-1 rounded leading-none">Nuevo</span>
+        </div>
+        <span className="font-semibold text-white">¡Paga a cuotas sin tarjeta de crédito! (3 cuotas con 0% de interés)</span>
+        <span className="opacity-30 hidden sm:inline">•</span>
+        <span className="text-white/80 hidden sm:inline">Todas las Tarjetas, PSE y Nequi</span>
+        <span className="opacity-30 hidden md:inline">•</span>
+        <span className="text-[#00F0D8] font-medium hidden md:inline">Envíos a toda Colombia</span>
       </div>
 
       {/* Main Nav */}

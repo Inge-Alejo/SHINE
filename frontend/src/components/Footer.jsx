@@ -1,5 +1,5 @@
 import React from 'react';
-import { MessageCircle, Shield, Heart, Sparkles, MapPin, ArrowUp } from 'lucide-react';
+import { MessageCircle, Shield, Heart, Sparkles, MapPin, ArrowUp, ShieldCheck, Lock, CreditCard } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 
 export default function Footer({ onSelectCategory, onOpenAdmin }) {
@@ -109,6 +109,128 @@ export default function Footer({ onSelectCategory, onOpenAdmin }) {
               >
                 Acceso Administrativo
               </button>
+            </div>
+          </div>
+        </div>
+
+        {/* MÉTODOS DE PAGO Y FINANCIACIÓN (Addi + Todas las Tarjetas + Billeteras) */}
+        <div className="pt-10 pb-2 border-t border-white/10 space-y-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <CreditCard className="w-4 h-4 text-[#00F0D8]" />
+                <h4 className="text-[13px] font-mono uppercase tracking-wider text-white font-bold">
+                  Métodos de Pago y Financiación Oficial
+                </h4>
+              </div>
+              <p className="text-[12px] text-white/60 mt-0.5">
+                Financia tus fragancias sin tarjeta con <strong className="text-[#00F0D8]">Addi</strong> (0% interés en hasta 3 cuotas), o paga con todas las tarjetas de crédito, débito, PSE y billeteras digitales.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 text-[11px] font-mono text-white/60 bg-white/5 px-3 py-1.5 rounded-[8px] border border-white/10 shrink-0 w-fit">
+              <Lock className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Transacciones Seguras y Encriptadas</span>
+            </div>
+          </div>
+
+          {/* Galería de Tarjetas y Medios de Pago */}
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 pt-1">
+            {/* 1. ADDI (Destacado BNPL) */}
+            <div 
+              className="h-9 px-3 rounded-[8px] bg-[#00F0D8] text-[#111111] flex items-center gap-2 shadow-sm hover:scale-105 transition-transform cursor-pointer select-none"
+              title="Addi: Paga a cuotas sin tarjeta de crédito y 0% de interés"
+            >
+              <span className="font-extrabold text-[16px] lowercase font-sans tracking-tight leading-none">
+                addi
+              </span>
+              <span className="text-[9px] font-mono font-bold bg-[#111111] text-[#00F0D8] px-1.5 py-0.5 rounded uppercase leading-none">
+                3 Cuotas 0%
+              </span>
+            </div>
+
+            {/* 2. VISA */}
+            <div 
+              className="h-9 px-3.5 rounded-[8px] bg-white text-[#1a1f71] flex items-center justify-center font-bold italic text-[16px] font-serif tracking-wider shadow-sm hover:scale-105 transition-transform cursor-pointer select-none"
+              title="Tarjetas de Crédito y Débito Visa"
+            >
+              VISA
+            </div>
+
+            {/* 3. MASTERCARD */}
+            <div 
+              className="h-9 px-3 rounded-[8px] bg-white text-[#111111] flex items-center gap-1.5 shadow-sm hover:scale-105 transition-transform cursor-pointer select-none"
+              title="Tarjetas de Crédito y Débito Mastercard"
+            >
+              <div className="flex -space-x-2">
+                <div className="w-4 h-4 rounded-full bg-[#eb001b]"></div>
+                <div className="w-4 h-4 rounded-full bg-[#f79e1b] opacity-90"></div>
+              </div>
+              <span className="text-[11.5px] font-bold tracking-tight font-sans">mastercard</span>
+            </div>
+
+            {/* 4. AMERICAN EXPRESS */}
+            <div 
+              className="h-9 px-3 rounded-[8px] bg-[#006fcf] text-white flex items-center justify-center font-extrabold text-[12px] tracking-wider shadow-sm hover:scale-105 transition-transform cursor-pointer select-none"
+              title="Tarjetas American Express"
+            >
+              AMEX
+            </div>
+
+            {/* 5. DINERS CLUB */}
+            <div 
+              className="h-9 px-3 rounded-[8px] bg-white text-[#004a97] flex items-center gap-1.5 shadow-sm hover:scale-105 transition-transform cursor-pointer select-none"
+              title="Diners Club International"
+            >
+              <div className="w-3.5 h-3.5 rounded-full border-2 border-[#004a97] flex items-center justify-center">
+                <div className="w-1.5 h-1.5 bg-[#004a97]"></div>
+              </div>
+              <span className="text-[11px] font-bold font-sans">Diners</span>
+            </div>
+
+            {/* 6. PSE */}
+            <div 
+              className="h-9 px-3 rounded-[8px] bg-white text-[#00386b] flex items-center gap-1.5 shadow-sm hover:scale-105 transition-transform cursor-pointer select-none"
+              title="PSE - Pagos Seguros en Línea (Todos los bancos de Colombia)"
+            >
+              <div className="w-4 h-4 rounded-full bg-[#00386b] flex items-center justify-center text-white text-[9px] font-black leading-none">
+                ✓
+              </div>
+              <span className="font-extrabold text-[12.5px] tracking-tight font-sans">PSE</span>
+            </div>
+
+            {/* 7. BANCOLOMBIA */}
+            <div 
+              className="h-9 px-3 rounded-[8px] bg-white text-[#111111] flex items-center gap-1.5 shadow-sm hover:scale-105 transition-transform cursor-pointer select-none"
+              title="Bancolombia: Transferencia, QR y Botón Bancolombia"
+            >
+              <div className="w-3.5 h-3.5 rounded-full bg-gradient-to-r from-yellow-400 via-blue-600 to-red-500"></div>
+              <span className="text-[11.5px] font-bold font-sans">Bancolombia</span>
+            </div>
+
+            {/* 8. NEQUI */}
+            <div 
+              className="h-9 px-3 rounded-[8px] bg-[#200020] text-white flex items-center gap-1.5 border border-[#ff007a]/40 shadow-sm hover:scale-105 transition-transform cursor-pointer select-none"
+              title="Nequi: Envíos inmediatos y pagos por QR"
+            >
+              <span className="w-2 h-2 rounded-full bg-[#ff007a] animate-pulse"></span>
+              <span className="text-[12px] font-bold tracking-tight font-sans">nequi</span>
+            </div>
+
+            {/* 9. DAVIPLATA */}
+            <div 
+              className="h-9 px-3 rounded-[8px] bg-[#ed1c24] text-white flex items-center gap-1.5 shadow-sm hover:scale-105 transition-transform cursor-pointer select-none"
+              title="Daviplata"
+            >
+              <span className="text-[12px] font-bold tracking-tight font-sans">daviplata</span>
+            </div>
+
+            {/* 10. EFECTIVO / TRANSFERENCIAS */}
+            <div 
+              className="h-9 px-3 rounded-[8px] bg-white/10 text-white/90 border border-white/20 flex items-center gap-1.5 text-[11px] font-mono hover:bg-white/20 transition-colors select-none"
+              title="Efecty, Transferencias y Efectivo"
+            >
+              <span>💵 Efectivo / Transferencias</span>
             </div>
           </div>
         </div>

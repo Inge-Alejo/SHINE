@@ -5,6 +5,7 @@ import { CartProvider } from './context/CartContext';
 import { fetchSettings, fetchProducts } from './services/api';
 import Header from './components/Header';
 import Hero from './components/Hero';
+import AddiBanner from './components/AddiBanner';
 import CategoriesSection from './components/CategoriesSection';
 import PresentationsSection from './components/PresentationsSection';
 import CatalogSection from './components/CatalogSection';
@@ -97,6 +98,9 @@ export default function App() {
           onExploreOriginals={() => handleSelectCategory('Originales')}
           onOpenProductDetail={(prod) => setSelectedProduct(prod)}
         />
+
+        {/* Anuncio Oficial Addi y Financiación */}
+        <AddiBanner />
 
         {/* Categories & Subcategories Section */}
         <CategoriesSection

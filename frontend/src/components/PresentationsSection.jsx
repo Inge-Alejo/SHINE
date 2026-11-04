@@ -108,6 +108,14 @@ export default function PresentationsSection() {
                       ${p.price.toLocaleString('es-CO')}
                       <span className="text-xs font-normal text-[#737780] ml-1">COP</span>
                     </div>
+
+                    {/* Addi Cuotas con 0% de interés */}
+                    <div className="mt-1.5 flex items-center gap-1.5 text-[11px] font-mono text-[#222222] bg-[#00F0D8]/15 border border-[#00F0D8]/40 px-2 py-1 rounded-[6px] w-fit">
+                      <span className="bg-[#00F0D8] text-[#111111] px-1 py-0.5 rounded font-extrabold text-[10.5px] font-sans lowercase leading-none">
+                        addi
+                      </span>
+                      <span>3 cuotas de <strong>${Math.round(p.price / 3).toLocaleString('es-CO')}</strong> (0% interés)</span>
+                    </div>
                   </div>
 
                   <p className="text-[13px] text-[#444955] leading-relaxed">

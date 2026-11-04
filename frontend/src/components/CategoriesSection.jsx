@@ -90,6 +90,8 @@ export default function CategoriesSection({ onSelectCategory, onSelectSubcategor
                 <img
                   src={cat.image}
                   alt={cat.title}
+                  loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
                 <div className="absolute top-3 left-3">
@@ -152,6 +154,8 @@ export default function CategoriesSection({ onSelectCategory, onSelectSubcategor
                   <img
                     src={sub.image}
                     alt={sub.name}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>

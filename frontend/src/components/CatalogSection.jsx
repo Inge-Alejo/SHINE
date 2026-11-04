@@ -346,6 +346,8 @@ export default function CatalogSection({
                       <img
                         src={p.image_url}
                         alt={`${p.name} - ${p.brand}`}
+                        loading="lazy"
+                        decoding="async"
                         className="max-h-[85%] max-w-[85%] object-contain transition-transform duration-500 group-hover:scale-108 mix-blend-multiply"
                         onError={(e) => {
                           e.target.onerror = null;
@@ -358,6 +360,8 @@ export default function CatalogSection({
                         <img 
                           src="./uploads/system/presentaciones_shine.jpg" 
                           alt="Presentación SHINE"
+                          loading="lazy"
+                          decoding="async"
                           className="max-h-[75%] object-contain opacity-70 group-hover:opacity-90 transition-opacity"
                         />
                         <span className="text-[10px] font-mono text-[#737780] pt-1">

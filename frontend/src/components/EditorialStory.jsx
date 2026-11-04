@@ -46,6 +46,8 @@ export default function EditorialStory() {
             <img
               src="./uploads/system/img_creacion.jpg"
               alt="Atelier y laboratorio de formulación SHINE Fragancias"
+              loading="lazy"
+              decoding="async"
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
             />
             <div className="absolute bottom-4 left-4 right-4 bg-black/60 backdrop-blur-md p-3 rounded-[6px] text-white flex items-center justify-between text-[12px] font-mono">
@@ -61,6 +63,8 @@ export default function EditorialStory() {
             <img
               src="./uploads/system/estilo_de_vida.jpg"
               alt="Estilo de vida y elegancia con SHINE Fragancias"
+              loading="lazy"
+              decoding="async"
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
             />
             <div className="absolute bottom-4 left-4 right-4 bg-black/60 backdrop-blur-md p-3 rounded-[6px] text-white flex items-center justify-between text-[12px] font-mono">

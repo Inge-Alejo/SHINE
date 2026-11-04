@@ -248,6 +248,8 @@ export default function Hero({
         <img
           src="./uploads/system/banner.jpg"
           alt="SHINE Fragancias - Alta Perfumería"
+          fetchPriority="high"
+          decoding="async"
           className="w-full h-full object-cover object-center filter brightness-[0.88] contrast-[1.05]"
         />
         {/* Soft dark gradient overlays for maximum text legibility */}

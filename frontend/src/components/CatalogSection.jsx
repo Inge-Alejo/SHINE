@@ -2,6 +2,18 @@ import React, { useState, useMemo } from 'react';
 import { Search, Filter, Sparkles, MessageCircle, ShoppingBag, Eye, X, ArrowUpDown } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 
+// Clases de estilo con color distintivo y elegante para cada género
+const getGenderBadgeClasses = (gender) => {
+  const g = gender || 'Unisex';
+  if (g === 'Mujer') {
+    return 'bg-rose-50/90 text-rose-700 border-rose-200/80';
+  }
+  if (g === 'Hombre') {
+    return 'bg-blue-50/90 text-blue-700 border-blue-200/80';
+  }
+  return 'bg-purple-50/90 text-purple-700 border-purple-200/80';
+};
+
 export default function CatalogSection({
   products,
   activeCategory,
@@ -255,7 +267,11 @@ export default function CatalogSection({
             <span>Filtros activos:</span>
             {searchTerm && <span className="px-2 py-0.5 rounded bg-[#ecedee] text-[#111] font-mono">Texto: "{searchTerm}"</span>}
             {selectedBrand && <span className="px-2 py-0.5 rounded bg-[#ecedee] text-[#111] font-mono">Casa: {selectedBrand}</span>}
-            {selectedGender && <span className="px-2 py-0.5 rounded bg-[#ecedee] text-[#111] font-mono">Género: {selectedGender}</span>}
+            {selectedGender && (
+              <span className={`px-2 py-0.5 rounded text-[11px] font-mono font-semibold border ${getGenderBadgeClasses(selectedGender)}`}>
+                Género: {selectedGender}
+              </span>
+            )}
             {activeSubcategory && <span className="px-2 py-0.5 rounded bg-[#ecedee] text-[#111] font-mono">Subcat: {activeSubcategory}</span>}
             <button
               onClick={() => {
@@ -316,7 +332,7 @@ export default function CatalogSection({
 
                   {/* Gender pill top right */}
                   <div className="absolute top-4 right-4 z-10">
-                    <span className="px-2 py-0.5 rounded-full bg-white/70 backdrop-blur-sm text-[#737780] text-[10px] font-mono">
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-semibold backdrop-blur-md shadow-xs border transition-colors ${getGenderBadgeClasses(p.gender)}`}>
                       {p.gender || 'Unisex'}
                     </span>
                   </div>

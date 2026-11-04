@@ -344,7 +344,13 @@ export default function Hero({
                 By {currentProduct.brand}
               </p>
               <div className="flex items-center gap-1.5 mt-1">
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#ecedee] text-[#444955]">
+                <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-semibold border ${
+                  (currentProduct.gender || 'Unisex') === 'Mujer'
+                    ? 'bg-rose-50 text-rose-700 border-rose-200'
+                    : (currentProduct.gender || 'Unisex') === 'Hombre'
+                    ? 'bg-blue-50 text-blue-700 border-blue-200'
+                    : 'bg-purple-50 text-purple-700 border-purple-200'
+                }`}>
                   {currentProduct.gender || 'Unisex'}
                 </span>
                 {currentProduct.subcategory && (

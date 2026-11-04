@@ -106,9 +106,22 @@ export default function ProductDetailModal({ product, onClose }) {
               <h3 className="text-xl sm:text-2xl font-bold text-[#111111] tracking-tight leading-snug">
                 {product.name}
               </h3>
-              <p className="text-[12px] font-mono text-[#737780] pt-0.5">
-                Género: {product.gender || 'Unisex'} {product.subcategory ? `• ${product.subcategory}` : ''}
-              </p>
+              <div className="flex items-center gap-2 pt-1.5">
+                <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-mono font-semibold border ${
+                  (product.gender || 'Unisex') === 'Mujer'
+                    ? 'bg-rose-50 text-rose-700 border-rose-200'
+                    : (product.gender || 'Unisex') === 'Hombre'
+                    ? 'bg-blue-50 text-blue-700 border-blue-200'
+                    : 'bg-purple-50 text-purple-700 border-purple-200'
+                }`}>
+                  {product.gender || 'Unisex'}
+                </span>
+                {product.subcategory && (
+                  <span className="text-[12px] font-mono text-[#737780]">
+                    • {product.subcategory}
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* Description / Olfactory notes */}

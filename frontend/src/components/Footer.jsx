@@ -177,18 +177,7 @@ export default function Footer({ onSelectCategory, onOpenAdmin }) {
               AMEX
             </div>
 
-            {/* 5. DINERS CLUB */}
-            <div 
-              className="h-9 px-3 rounded-[8px] bg-white text-[#004a97] flex items-center gap-1.5 shadow-sm hover:scale-105 transition-transform cursor-pointer select-none"
-              title="Diners Club International"
-            >
-              <div className="w-3.5 h-3.5 rounded-full border-2 border-[#004a97] flex items-center justify-center">
-                <div className="w-1.5 h-1.5 bg-[#004a97]"></div>
-              </div>
-              <span className="text-[11px] font-bold font-sans">Diners</span>
-            </div>
-
-            {/* 6. PSE */}
+            {/* 5. PSE */}
             <div 
               className="h-9 px-3 rounded-[8px] bg-white text-[#00386b] flex items-center gap-1.5 shadow-sm hover:scale-105 transition-transform cursor-pointer select-none"
               title="PSE - Pagos Seguros en Línea (Todos los bancos de Colombia)"
@@ -199,7 +188,7 @@ export default function Footer({ onSelectCategory, onOpenAdmin }) {
               <span className="font-extrabold text-[12.5px] tracking-tight font-sans">PSE</span>
             </div>
 
-            {/* 7. BANCOLOMBIA */}
+            {/* 6. BANCOLOMBIA */}
             <div 
               className="h-9 px-3 rounded-[8px] bg-white text-[#111111] flex items-center gap-1.5 shadow-sm hover:scale-105 transition-transform cursor-pointer select-none"
               title="Bancolombia: Transferencia, QR y Botón Bancolombia"
@@ -208,7 +197,7 @@ export default function Footer({ onSelectCategory, onOpenAdmin }) {
               <span className="text-[11.5px] font-bold font-sans">Bancolombia</span>
             </div>
 
-            {/* 8. NEQUI */}
+            {/* 7. NEQUI */}
             <div 
               className="h-9 px-3 rounded-[8px] bg-[#200020] text-white flex items-center gap-1.5 border border-[#ff007a]/40 shadow-sm hover:scale-105 transition-transform cursor-pointer select-none"
               title="Nequi: Envíos inmediatos y pagos por QR"
@@ -217,7 +206,7 @@ export default function Footer({ onSelectCategory, onOpenAdmin }) {
               <span className="text-[12px] font-bold tracking-tight font-sans">nequi</span>
             </div>
 
-            {/* 9. DAVIPLATA */}
+            {/* 8. DAVIPLATA */}
             <div 
               className="h-9 px-3 rounded-[8px] bg-[#ed1c24] text-white flex items-center gap-1.5 shadow-sm hover:scale-105 transition-transform cursor-pointer select-none"
               title="Daviplata"
@@ -225,7 +214,7 @@ export default function Footer({ onSelectCategory, onOpenAdmin }) {
               <span className="text-[12px] font-bold tracking-tight font-sans">daviplata</span>
             </div>
 
-            {/* 10. EFECTIVO / TRANSFERENCIAS */}
+            {/* 9. EFECTIVO / TRANSFERENCIAS */}
             <div 
               className="h-9 px-3 rounded-[8px] bg-white/10 text-white/90 border border-white/20 flex items-center gap-1.5 text-[11px] font-mono hover:bg-white/20 transition-colors select-none"
               title="Efecty, Transferencias y Efectivo"

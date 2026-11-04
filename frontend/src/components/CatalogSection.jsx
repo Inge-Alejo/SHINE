@@ -375,8 +375,21 @@ export default function CatalogSection({
                   <div className="space-y-3 pt-2">
                     <div className="flex items-center gap-3">
                       {/* Brand Logo Thumbnail 40x40 */}
-                      <div className="w-10 h-10 rounded-[6px] bg-white border border-[#ecedee] flex items-center justify-center text-[12px] font-mono font-bold text-[#111111] shrink-0 shadow-sm">
-                        {brandInitials}
+                      <div className="w-10 h-10 rounded-[8px] bg-white border border-[#ecedee] flex items-center justify-center text-[12px] font-mono font-bold text-[#111111] shrink-0 shadow-sm overflow-hidden p-1.5 transition-transform group-hover:scale-105">
+                        {p.brand_logo_url ? (
+                          <img 
+                            src={p.brand_logo_url} 
+                            alt={p.brand} 
+                            className="w-full h-full object-contain"
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.style.display = 'none';
+                              e.target.parentElement.innerText = brandInitials;
+                            }}
+                          />
+                        ) : (
+                          brandInitials
+                        )}
                       </div>
 
                       <div className="min-w-0 flex-1">
@@ -407,7 +420,7 @@ export default function CatalogSection({
                           <div>
                             <span className="text-[10px] font-mono text-[#737780] block">Desde</span>
                             <span className="text-[13px] font-mono font-bold text-[#111111]">
-                              $17.000 COP
+                              ${(getPriceForPresentation ? getPriceForPresentation('30ml') : 50000).toLocaleString('es-CO')} COP
                             </span>
                           </div>
                           <button

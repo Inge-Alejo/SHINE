@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <rect width="200" height="200" fill="#ffffff" rx="16"/>
+  <rect x="8" y="8" width="184" height="184" fill="none" stroke="#ecedee" stroke-width="2" rx="12"/>
+  <g fill="#111111" text-anchor="middle">
+    <!-- Emblema de lujo -->
+    <circle cx="100" cy="80" r="38" fill="none" stroke="#111111" stroke-width="2.5" opacity="0.3"/>
+    <text x="100" y="93" font-family="'Space Mono', 'Cinzel', 'Playfair Display', serif, monospace" font-size="34" font-weight="bold" letter-spacing="1">
+      MF
+    </text>
+    <text x="100" y="145" font-family="'Plus Jakarta Sans', -apple-system, sans-serif" font-size="13" font-weight="700" letter-spacing="2" text-transform="uppercase">
+      Messi Fragranc.
+    </text>
+    <text x="100" y="162" font-family="'Space Mono', monospace" font-size="8" fill="#737780" letter-spacing="3" text-transform="uppercase">
+      PARFUMS
+    </text>
+  </g>
+</svg>

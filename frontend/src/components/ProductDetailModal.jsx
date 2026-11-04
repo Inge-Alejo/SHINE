@@ -100,9 +100,16 @@ export default function ProductDetailModal({ product, onClose }) {
           <div className="space-y-4">
             {/* Title & Brand */}
             <div>
-              <span className="text-[12px] font-mono text-[#000aff] font-semibold uppercase tracking-wider block">
-                {product.brand}
-              </span>
+              <div className="flex items-center gap-2 mb-1.5">
+                {product.brand_logo_url && (
+                  <div className="w-7 h-7 rounded-[6px] bg-white border border-[#ecedee] p-1 flex items-center justify-center shrink-0 shadow-xs">
+                    <img src={product.brand_logo_url} alt="" className="w-full h-full object-contain" />
+                  </div>
+                )}
+                <span className="text-[12px] font-mono text-[#000aff] font-semibold uppercase tracking-wider">
+                  {product.brand}
+                </span>
+              </div>
               <h3 className="text-xl sm:text-2xl font-bold text-[#111111] tracking-tight leading-snug">
                 {product.name}
               </h3>

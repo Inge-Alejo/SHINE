@@ -28,17 +28,58 @@ export default function Header({ onOpenAdmin, onSearchClick, activeCategory, onS
 
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#ecedee]">
-      {/* Announcement Bar: Addi + Medios de Pago + Envíos */}
-      <div className="bg-[#0b132b] text-white py-1.5 px-4 text-center text-[12px] font-mono tracking-tight flex flex-wrap items-center justify-center gap-2 sm:gap-3 border-b border-[#00F0D8]/20">
+      {/* Announcement Bar: Versión Desktop (Centrada y fija) */}
+      <div className="hidden md:flex bg-[#0b132b] text-white py-1.5 px-4 text-center text-[12px] font-mono tracking-tight items-center justify-center gap-3 border-b border-[#00F0D8]/20 select-none">
         <div className="flex items-center gap-1.5 bg-[#00F0D8] text-[#111111] px-2 py-0.5 rounded-[5px] font-bold text-[11px] font-sans">
           <span className="lowercase font-extrabold tracking-tight">addi</span>
           <span className="text-[9px] font-mono uppercase bg-black text-[#00F0D8] px-1 rounded leading-none">Nuevo</span>
         </div>
         <span className="font-semibold text-white">¡Paga a cuotas sin tarjeta de crédito! (3 cuotas con 0% de interés)</span>
-        <span className="opacity-30 hidden sm:inline">•</span>
-        <span className="text-white/80 hidden sm:inline">Todas las Tarjetas, PSE y Nequi</span>
-        <span className="opacity-30 hidden md:inline">•</span>
-        <span className="text-[#00F0D8] font-medium hidden md:inline">Envíos a toda Colombia</span>
+        <span className="opacity-30">•</span>
+        <span className="text-white/80">Todas las Tarjetas, PSE y Nequi</span>
+        <span className="opacity-30">•</span>
+        <span className="text-[#00F0D8] font-medium">Envíos a toda Colombia</span>
+      </div>
+
+      {/* Announcement Bar: Versión Móvil (Cinta en Loop Infinito / Ticker Marquee) */}
+      <div className="flex md:hidden bg-[#0b132b] text-white py-1.5 overflow-hidden border-b border-[#00F0D8]/20 select-none">
+        <div className="animate-marquee-infinite flex items-center text-[11.5px] font-mono tracking-tight whitespace-nowrap">
+          {/* Loop Track 1 */}
+          <div className="flex items-center gap-3 pr-6">
+            <div className="flex items-center gap-1 bg-[#00F0D8] text-[#111111] px-1.5 py-0.5 rounded-[4px] font-bold text-[10px] font-sans">
+              <span className="lowercase font-extrabold tracking-tight">addi</span>
+              <span className="text-[8px] font-mono uppercase bg-black text-[#00F0D8] px-1 rounded leading-none">3 Cuotas 0%</span>
+            </div>
+            <span className="font-semibold text-white">¡Paga a cuotas sin tarjeta de crédito!</span>
+            <span className="text-[#00F0D8]/50">•</span>
+            <span className="text-white/90">💳 Tarjetas Visa, Mastercard, AMEX</span>
+            <span className="text-[#00F0D8]/50">•</span>
+            <span className="text-white/90">🏦 PSE, Bancolombia, Nequi y Daviplata</span>
+            <span className="text-[#00F0D8]/50">•</span>
+            <span className="text-[#00F0D8] font-semibold">📦 Envíos asegurados a toda Colombia</span>
+            <span className="text-[#00F0D8]/50">•</span>
+            <span className="text-[#e5e7ff] font-medium">💎 SHINE Fragancias Oficial</span>
+            <span className="text-[#00F0D8]/50">•</span>
+          </div>
+
+          {/* Loop Track 2 (Duplicado idéntico para empalme perfecto continuo) */}
+          <div className="flex items-center gap-3 pr-6" aria-hidden="true">
+            <div className="flex items-center gap-1 bg-[#00F0D8] text-[#111111] px-1.5 py-0.5 rounded-[4px] font-bold text-[10px] font-sans">
+              <span className="lowercase font-extrabold tracking-tight">addi</span>
+              <span className="text-[8px] font-mono uppercase bg-black text-[#00F0D8] px-1 rounded leading-none">3 Cuotas 0%</span>
+            </div>
+            <span className="font-semibold text-white">¡Paga a cuotas sin tarjeta de crédito!</span>
+            <span className="text-[#00F0D8]/50">•</span>
+            <span className="text-white/90">💳 Tarjetas Visa, Mastercard, AMEX</span>
+            <span className="text-[#00F0D8]/50">•</span>
+            <span className="text-white/90">🏦 PSE, Bancolombia, Nequi y Daviplata</span>
+            <span className="text-[#00F0D8]/50">•</span>
+            <span className="text-[#00F0D8] font-semibold">📦 Envíos asegurados a toda Colombia</span>
+            <span className="text-[#00F0D8]/50">•</span>
+            <span className="text-[#e5e7ff] font-medium">💎 SHINE Fragancias Oficial</span>
+            <span className="text-[#00F0D8]/50">•</span>
+          </div>
+        </div>
       </div>
 
       {/* Main Nav */}

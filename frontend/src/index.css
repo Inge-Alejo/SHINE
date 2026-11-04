@@ -58,3 +58,25 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #a1a4aa;
 }
+
+/* Loop Infinito Suave (Marquee Ticker) para pantallas pequeñas y móviles */
+@keyframes marquee {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.animate-marquee-infinite {
+  display: flex;
+  width: max-content;
+  animation: marquee 20s linear infinite;
+  will-change: transform;
+}
+
+.animate-marquee-infinite:hover,
+.animate-marquee-infinite:active {
+  animation-play-state: paused;
+}

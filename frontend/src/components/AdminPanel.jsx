@@ -601,7 +601,7 @@ export default function AdminPanel({ isOpen, onClose, onRefreshCatalog }) {
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 animate-fadeIn">
-      <div className="bg-white rounded-[14.4px] w-full max-w-7xl max-h-[94vh] flex flex-col shadow-2xl border border-[#ecedee] overflow-hidden">
+      <div className="bg-white rounded-[14.4px] w-full max-w-[96vw] 2xl:max-w-7xl max-h-[95vh] flex flex-col shadow-2xl border border-[#ecedee] overflow-hidden">
         {/* Header */}
         <div className="px-6 py-4 border-b border-[#ecedee] bg-[#111111] text-white flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -700,7 +700,7 @@ export default function AdminPanel({ isOpen, onClose, onRefreshCatalog }) {
           /* AUTHENTICATED PANEL CONTENT */
           <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
             {/* Sidebar Navigation */}
-            <aside className="w-full md:w-64 bg-[#ecedee] border-r border-[#d7d7d7] p-3 flex md:flex-col gap-1 overflow-x-auto shrink-0">
+            <aside className="w-full md:w-52 lg:w-56 bg-[#ecedee] border-r border-[#d7d7d7] p-2.5 sm:p-3 flex md:flex-col gap-1 overflow-x-auto shrink-0">
               {[
                 { id: 'dashboard', label: 'Dashboard', icon: Database },
                 { id: 'products', label: 'Catálogo & 1.1', icon: Sparkles },
@@ -728,7 +728,7 @@ export default function AdminPanel({ isOpen, onClose, onRefreshCatalog }) {
             </aside>
 
             {/* Main Content Area */}
-            <main className="flex-1 overflow-y-auto p-6 bg-white space-y-6">
+            <main className="flex-1 overflow-y-auto p-3 sm:p-5 lg:p-6 bg-white space-y-5">
               {/* TAB 1: DASHBOARD */}
               {activeTab === 'dashboard' && (
                 <div className="space-y-6">
@@ -1152,27 +1152,27 @@ export default function AdminPanel({ isOpen, onClose, onRefreshCatalog }) {
                           </div>
                         </div>
 
-                        {/* Contenedor con Scroll de la Tabla */}
-                        <div className="border border-[#ecedee] rounded-[10px] overflow-x-auto overflow-y-auto max-h-[60vh] bg-white shadow-xs">
-                          <table className="w-full min-w-[1040px] text-left text-[12px] font-mono">
-                            <thead className="bg-[#ecedee] sticky top-0 z-10">
+                        {/* Contenedor con Scroll de la Tabla: En PC se adapta al 100% de la pantalla sin slider horizontal, y en celulares mantiene scroll táctil fluido */}
+                        <div className="border border-[#ecedee] rounded-[10px] overflow-x-auto overflow-y-auto max-h-[62vh] bg-white shadow-xs">
+                          <table className="w-full min-w-[700px] md:min-w-0 md:w-full text-left text-[11.5px] font-mono">
+                            <thead className="bg-[#ecedee] sticky top-0 z-10 text-[11px] text-[#444955] uppercase tracking-wider">
                               <tr>
-                                <th className="p-3 w-10 text-center shrink-0">
+                                <th className="py-2.5 pl-3 pr-1 w-8 text-center shrink-0">
                                   <input
                                     type="checkbox"
-                                    className="w-4 h-4 cursor-pointer accent-[#000aff]"
+                                    className="w-3.5 h-3.5 cursor-pointer accent-[#000aff]"
                                     checked={allCurrentSelected}
                                     onChange={() => handleSelectAllProducts(displayedList)}
                                     title="Seleccionar / deseleccionar los visibles en esta página"
                                   />
                                 </th>
-                                <th className="p-3 min-w-[200px]">Perfume</th>
-                                <th className="p-3 min-w-[110px]">Casa</th>
-                                <th className="p-3 text-center min-w-[95px] whitespace-nowrap">Género</th>
-                                <th className="p-3 min-w-[170px] whitespace-nowrap">Notas Olfativas IA</th>
-                                <th className="p-3 text-center min-w-[130px] whitespace-nowrap">Categoría</th>
-                                <th className="p-3 text-center min-w-[140px] whitespace-nowrap">Config 1.1</th>
-                                <th className="p-3 text-right min-w-[130px] pr-4 whitespace-nowrap">Acciones</th>
+                                <th className="py-2.5 px-2 min-w-[120px] lg:min-w-[140px]">Perfume</th>
+                                <th className="py-2.5 px-2 min-w-[75px] lg:min-w-[90px]">Casa</th>
+                                <th className="py-2.5 px-1.5 text-center min-w-[75px] whitespace-nowrap">Género</th>
+                                <th className="py-2.5 px-2 min-w-[100px] lg:min-w-[130px] whitespace-nowrap">Notas Olfativas IA</th>
+                                <th className="py-2.5 px-1.5 text-center min-w-[80px] whitespace-nowrap">Categoría</th>
+                                <th className="py-2.5 px-1.5 text-center min-w-[90px] whitespace-nowrap">Config 1.1</th>
+                                <th className="py-2.5 pl-1.5 pr-3 text-right min-w-[95px] whitespace-nowrap">Acciones</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -1191,36 +1191,42 @@ export default function AdminPanel({ isOpen, onClose, onRefreshCatalog }) {
 
                                   return (
                                     <tr key={p.id} className={`border-b border-[#ecedee] hover:bg-neutral-50 transition-colors ${isSelected ? 'bg-[#f4f6ff]' : ''}`}>
-                                      <td className="p-3 text-center">
+                                      <td className="py-2 pl-3 pr-1 text-center shrink-0">
                                         <input
                                           type="checkbox"
-                                          className="w-4 h-4 cursor-pointer accent-[#000aff]"
+                                          className="w-3.5 h-3.5 cursor-pointer accent-[#000aff]"
                                           checked={isSelected}
                                           onChange={() => handleToggleSelectProduct(p.id)}
                                         />
                                       </td>
-                                      <td className="p-3">
-                                        <div className="flex items-center gap-2.5">
+                                      <td className="py-2 px-2">
+                                        <div className="flex items-center gap-2">
                                           {p.image_url ? (
-                                            <img src={p.image_url} alt="" className="w-8 h-8 rounded object-cover border border-[#ecedee] shrink-0 bg-white" />
+                                            <img src={p.image_url} alt="" className="w-7 h-7 rounded object-cover border border-[#ecedee] shrink-0 bg-white" />
                                           ) : (
-                                            <div className="w-8 h-8 rounded bg-[#ecedee] flex items-center justify-center text-[10px] text-[#737780] shrink-0">
+                                            <div className="w-7 h-7 rounded bg-[#ecedee] flex items-center justify-center text-[9px] text-[#737780] shrink-0 font-sans">
                                               Sin foto
                                             </div>
                                           )}
-                                          <div>
-                                            <span className="font-bold text-[#111111] block leading-tight">{p.name}</span>
-                                            <span className="text-[10px] text-[#737780]">{p.id}</span>
+                                          <div className="min-w-0">
+                                            <span className="font-bold text-[#111111] block leading-tight truncate max-w-[110px] sm:max-w-[150px] lg:max-w-[190px]" title={p.name}>
+                                              {p.name}
+                                            </span>
+                                            <span className="text-[9.5px] text-[#737780] block">{p.id}</span>
                                           </div>
                                         </div>
                                       </td>
-                                      <td className="p-3">{p.brand}</td>
-                                      <td className="p-3 text-center whitespace-nowrap">
+                                      <td className="py-2 px-2">
+                                        <span className="truncate block max-w-[75px] sm:max-w-[95px] lg:max-w-[120px] text-[#111111]" title={p.brand}>
+                                          {p.brand}
+                                        </span>
+                                      </td>
+                                      <td className="py-2 px-1.5 text-center whitespace-nowrap">
                                         <button
                                           type="button"
                                           onClick={() => handleToggleGender(p)}
                                           title="Clic para alternar género: Unisex → Hombre → Mujer"
-                                          className={`px-2.5 py-0.5 rounded-full text-[10.5px] font-semibold cursor-pointer transition-all border whitespace-nowrap ${
+                                          className={`px-2 py-0.5 rounded-full text-[9.5px] font-semibold cursor-pointer transition-all border whitespace-nowrap ${
                                             (p.gender || 'Unisex') === 'Unisex'
                                               ? 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100'
                                               : p.gender === 'Hombre'
@@ -1231,20 +1237,20 @@ export default function AdminPanel({ isOpen, onClose, onRefreshCatalog }) {
                                           {p.gender || 'Unisex'} ↻
                                         </button>
                                       </td>
-                                      <td className="p-3 whitespace-nowrap">
+                                      <td className="py-2 px-2 whitespace-nowrap">
                                         {hasNotes ? (
-                                          <span className="px-2.5 py-1 rounded-full text-[10.5px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1.5 w-max whitespace-nowrap">
-                                            <CheckCircle2 className="w-3 h-3 shrink-0" />
-                                            <span className="truncate max-w-[160px]" title={p.olfactory_family}>{p.olfactory_family}</span>
+                                          <span className="px-2 py-0.5 rounded-full text-[9.5px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1 w-max whitespace-nowrap" title={p.olfactory_family}>
+                                            <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
+                                            <span className="truncate max-w-[95px] sm:max-w-[130px] lg:max-w-[160px]">{p.olfactory_family}</span>
                                           </span>
                                         ) : (
-                                          <span className="px-2.5 py-1 rounded-full text-[10px] font-medium bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1 w-max whitespace-nowrap">
+                                          <span className="px-2 py-0.5 rounded-full text-[9.5px] font-medium bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1 w-max whitespace-nowrap">
                                             <span>Pendiente IA</span>
                                           </span>
                                         )}
                                       </td>
-                                      <td className="p-3 text-center whitespace-nowrap">
-                                        <span className={`inline-block px-3 py-1 rounded-full text-[10.5px] font-semibold whitespace-nowrap ${
+                                      <td className="py-2 px-1.5 text-center whitespace-nowrap">
+                                        <span className={`inline-block px-2.5 py-0.5 rounded-full text-[9.5px] font-semibold whitespace-nowrap ${
                                           is11 
                                             ? 'bg-[#000aff] text-white shadow-xs' 
                                             : 'bg-neutral-100 text-neutral-800 border border-neutral-300'
@@ -1252,10 +1258,10 @@ export default function AdminPanel({ isOpen, onClose, onRefreshCatalog }) {
                                           {p.category}
                                         </span>
                                       </td>
-                                      <td className="p-3 text-center whitespace-nowrap">
+                                      <td className="py-2 px-1.5 text-center whitespace-nowrap">
                                         <button
                                           onClick={() => handleToggle11(p)}
-                                          className={`px-3 py-1.5 rounded-[7px] text-[11px] font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                                          className={`px-2.5 py-1 rounded-[6px] text-[10px] font-semibold whitespace-nowrap transition-all cursor-pointer ${
                                             is11
                                               ? 'bg-red-50 text-red-700 hover:bg-red-100 border border-red-200'
                                               : 'bg-[#e5e7ff] text-[#000aff] hover:bg-[#000aff] hover:text-white border border-[#000aff]/30'
@@ -1264,27 +1270,27 @@ export default function AdminPanel({ isOpen, onClose, onRefreshCatalog }) {
                                           {is11 ? 'Quitar de 1.1' : '+ Asignar a 1.1'}
                                         </button>
                                       </td>
-                                      <td className="p-3 text-right pr-4 whitespace-nowrap">
-                                        <div className="flex items-center justify-end gap-1.5 shrink-0">
+                                      <td className="py-2 pl-1.5 pr-3 text-right whitespace-nowrap">
+                                        <div className="flex items-center justify-end gap-1 shrink-0">
                                           <button
                                             onClick={() => handleEnrichSingle(p)}
                                             disabled={isEnrichingThis || isAiRunning}
-                                            className="px-2.5 py-1 rounded bg-[#e5e7ff] text-[#000aff] hover:bg-[#000aff] hover:text-white text-[11px] font-semibold flex items-center gap-1 cursor-pointer transition-colors disabled:opacity-50 shrink-0"
+                                            className="px-2 py-0.5 rounded bg-[#e5e7ff] text-[#000aff] hover:bg-[#000aff] hover:text-white text-[10px] font-semibold flex items-center gap-1 cursor-pointer transition-colors disabled:opacity-50 shrink-0"
                                             title="Generar notas y ficha técnica con Gemini IA"
                                           >
-                                            {isEnrichingThis ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Bot className="w-3 h-3" />}
+                                            {isEnrichingThis ? <RefreshCw className="w-2.5 h-2.5 animate-spin" /> : <Bot className="w-2.5 h-2.5" />}
                                             <span>IA</span>
                                           </button>
                                           <button
                                             onClick={() => handleOpenEditProduct(p)}
-                                            className="p-1.5 rounded hover:bg-neutral-200 text-[#111111] cursor-pointer shrink-0 transition-colors"
+                                            className="p-1 rounded hover:bg-neutral-200 text-[#111111] cursor-pointer shrink-0 transition-colors"
                                             title="Editar datos"
                                           >
                                             <Edit className="w-3.5 h-3.5" />
                                           </button>
                                           <button
                                             onClick={() => handleDeleteProduct(p.id)}
-                                            className="p-1.5 rounded hover:bg-red-100 text-red-600 cursor-pointer shrink-0 transition-colors"
+                                            className="p-1 rounded hover:bg-red-100 text-red-600 cursor-pointer shrink-0 transition-colors"
                                             title="Eliminar del catálogo"
                                           >
                                             <Trash2 className="w-3.5 h-3.5" />

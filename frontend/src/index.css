@@ -59,7 +59,7 @@ body {
   background: #a1a4aa;
 }
 
-/* Loop Infinito Suave (Marquee Ticker) para pantallas pequeñas y móviles */
+/* Loop Infinito Suave (Marquee Ticker) Universal para todas las pantallas */
 @keyframes marquee {
   0% {
     transform: translate3d(0, 0, 0);
@@ -72,7 +72,7 @@ body {
 .animate-marquee-infinite {
   display: flex;
   width: max-content;
-  animation: marquee 20s linear infinite;
+  animation: marquee 28s linear infinite;
   will-change: transform;
 }
 
